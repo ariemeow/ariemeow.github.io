@@ -1,0 +1,47 @@
+{
+    "name": "Mochammad Zachri",
+    "short_name": "Zachri",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#fdfdfd",
+    "theme_color": "#43853D",
+    "orientation": "portrait-primary",
+    "icons": [
+      {
+        "src": "/img/icon.png",
+        "type": "image/png","sizes": "128x128"
+      },
+      {
+        "src": "/img/cyberlabs.png",
+        "type": "image/png","sizes": "350x88"
+      },
+      {
+        "src": "/img/digitama.png",
+        "type": "image/png","sizes": "132x114"
+      },
+      {
+        "src": "/img/im.png",
+        "type": "image/png","sizes": "104x90"
+      },
+      {
+        "src": "/img/imceria.png",
+        "type": "image/png","sizes": "126x100"
+      },
+      {
+        "src": "/img/jovian.jpg",
+        "type": "image/jpg","sizes": "159x150"
+      },
+      {
+        "src": "/img/profile.JPG",
+        "type": "image/jpg","sizes": "376x376"
+      },
+      {
+        "src": "/img/qwords.png",
+        "type": "image/png","sizes": "200x200"
+      },
+      {
+        "src": "/img/visinesia.png",
+        "type": "image/png","sizes": "694x194"
+      }
+    ]
+  }
