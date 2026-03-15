@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EntarAja – Catat Rencanamu | Record Your Plans</title>
+  <meta name="description" content="EntarAja - Task list app with WhatsApp reminders and Google Drive backup. Catat rencanamu, kirim reminder ke WA, backup ke Drive.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --yellow: #E9C76A;
+      --green: #8EB376;
+      --white: #FFFFFF;
+      --black: #312A25;
+      --black-light: #4a423b;
+      --green-soft: rgba(142, 179, 118, 0.15);
+      --yellow-soft: rgba(233, 199, 106, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--black);
+      color: var(--white);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 1rem 1.5rem;
+      background: rgba(49, 42, 37, 0.95);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-small {
+      height: 36px;
+      width: auto;
+    }
+
+    .lang-toggle {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .lang-btn {
+      display: inline-flex;
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--green);
+      background: transparent;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn:hover {
+      background: var(--green-soft);
+    }
+
+    .lang-btn.active {
+      background: var(--green);
+      color: var(--black);
+      border-color: var(--green);
+    }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6rem 1.5rem 4rem;
+      text-align: center;
+    }
+
+    .hero-logo {
+      max-width: 200px;
+      width: 70%;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero .tagline {
+      font-size: 1.25rem;
+      color: var(--yellow);
+      margin-bottom: 2rem;
+      font-weight: 500;
+    }
+
+    .hero-desc {
+      max-width: 420px;
+      font-size: 1.05rem;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
+      background: var(--green);
+      color: var(--black);
+      font-family: inherit;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(142, 179, 118, 0.35);
+    }
+
+    .cta-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* Features */
+    .features {
+      padding: 5rem 1.5rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 3rem;
+      color: var(--white);
+    }
+
+    .feature-grid {
+      display: grid;
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: var(--black-light);
+      border-radius: 16px;
+      padding: 2rem;
+      border: 1px solid rgba(142, 179, 118, 0.2);
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: var(--yellow);
+    }
+
+    .feature-card p {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1rem;
+    }
+
+    /* Privacy Policy */
+    .privacy {
+      padding: 5rem 1.5rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .privacy-content {
+      background: var(--black-light);
+      border-radius: 16px;
+      padding: 2.5rem;
+      border: 1px solid rgba(142, 179, 118, 0.2);
+    }
+
+    .privacy-content h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--green);
+    }
+
+    .privacy-content h3 {
+      font-size: 1.1rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--yellow);
+    }
+
+    .privacy-content p,
+    .privacy-content ul {
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 1rem;
+    }
+
+    .privacy-content ul {
+      padding-left: 1.5rem;
+    }
+
+    .privacy-content a {
+      color: var(--yellow);
+      text-decoration: underline;
+    }
+
+    .privacy-content a:hover {
+      color: var(--green);
+    }
+
+    /* Footer */
+    footer {
+      padding: 2rem 1.5rem;
+      text-align: center;
+      border-top: 1px solid rgba(142, 179, 118, 0.15);
+    }
+
+    footer p {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.9rem;
+    }
+
+    /* Hide language-specific content (exclude lang buttons so they stay visible) */
+    [data-lang]:not(.lang-btn) {
+      display: none;
+    }
+
+    [data-lang]:not(.lang-btn).active {
+      display: block;
+    }
+
+    span[data-lang].active {
+      display: inline;
+    }
+
+    .privacy-link {
+      color: var(--white);
+      text-decoration: none;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .privacy-link:hover {
+      color: var(--yellow);
+    }
+
+    /* Responsive */
+    @media (min-width: 640px) {
+      .hero h1 {
+        font-size: 3rem;
+      }
+
+      .hero .tagline {
+        font-size: 1.5rem;
+      }
+
+      .feature-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="aset/logoentaraja.png" alt="EntarAja" class="logo-small">
+    <nav style="display: flex; align-items: center; gap: 1.5rem;">
+      <a href="#privacy" class="privacy-link" data-lang="id">Kebijakan Privasi</a>
+      <a href="#privacy" class="privacy-link" data-lang="en">Privacy Policy</a>
+      <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="id" aria-label="Bahasa Indonesia">ID</button>
+      <button class="lang-btn" data-lang="en" aria-label="English">EN</button>
+    </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <img src="aset/logoentaraja.png" alt="EntarAja" class="hero-logo">
+      <h1>EntarAja</h1>
+      <p class="tagline" data-lang="id">Catat Rencanamu</p>
+      <p class="tagline" data-lang="en">Record Your Plans</p>
+
+      <p class="hero-desc" data-lang="id">
+        Aplikasi to-do sederhana untuk mencatat rencana, mengirim reminder ke WhatsApp, dan backup ke Google Drive. Tetap produktif tanpa ribet.
+      </p>
+      <p class="hero-desc" data-lang="en">
+        A simple to-do app to record your plans, send reminders to WhatsApp, and backup to Google Drive. Stay productive without hassle.
+      </p>
+
+      <a href="https://play.google.com/store/apps/details?id=com.rprojects.entaraja" class="cta-btn" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5v-17c0-.83.67-1.5 1.5-1.5 0 0 1 .5.08l11.5 6.5-11.5 6.5c-.17.09-.33.14-.5.14-.83 0-1.5-.67-1.5-1.5zm14-6.5L6.5 6.5 17 12l.5-.5zM6.5 17.5l5-2.9-5-2.9v5.8z"/></svg>
+        <span data-lang="id">Unduh di Google Play</span>
+        <span data-lang="en">Download on Google Play</span>
+      </a>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+      <h2 class="section-title" data-lang="id">Fitur Utama</h2>
+      <h2 class="section-title" data-lang="en">Key Features</h2>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>📋 <span data-lang="id">Daftar Tugas</span><span data-lang="en">Task List</span></h3>
+          <p data-lang="id">Buat dan kelola to-do harian dengan mudah. Organisir rencana per tanggal, tandai yang sudah selesai.</p>
+          <p data-lang="en">Create and manage daily to-dos effortlessly. Organize plans by date, check off completed tasks.</p>
+        </div>
+        <div class="feature-card">
+          <h3>💬 <span data-lang="id">Reminder WhatsApp</span><span data-lang="en">WhatsApp Reminder</span></h3>
+          <p data-lang="id">Kirim reminder tugas langsung ke WhatsApp. Tetap ingat tugas penting tanpa lupa.</p>
+          <p data-lang="en">Send task reminders directly to WhatsApp. Never forget important tasks.</p>
+        </div>
+        <div class="feature-card">
+          <h3>☁️ <span data-lang="id">Backup ke Drive</span><span data-lang="en">Drive Backup</span></h3>
+          <p data-lang="id">Sinkronkan data ke Google Drive. Backup dan restore kapan saja dengan aman.</p>
+          <p data-lang="en">Sync your data to Google Drive. Backup and restore anytime, safely.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy Policy -->
+    <section class="privacy" id="privacy">
+      <h2 class="section-title" data-lang="id">Kebijakan Privasi</h2>
+      <h2 class="section-title" data-lang="en">Privacy Policy</h2>
+
+      <div class="privacy-content">
+        <p data-lang="id">
+          <strong>EntarAja</strong> ("kami") menghormati privasi pengguna aplikasi. Kebijakan privasi ini menjelaskan data yang kami kumpulkan dan bagaimana kami menggunakannya.
+        </p>
+        <p data-lang="en">
+          <strong>EntarAja</strong> ("we") respects the privacy of our app users. This privacy policy describes the data we collect and how we use it.
+        </p>
+
+        <h3 data-lang="id">Data yang Kami Kumpulkan</h3>
+        <h3 data-lang="en">Data We Collect</h3>
+        <ul>
+          <li data-lang="id"><strong>Nama pengguna</strong> – Dari login Google, untuk personalisasi dan identifikasi akun.</li>
+          <li data-lang="en"><strong>User name</strong> – From Google Sign-In, for personalization and account identification.</li>
+          <li data-lang="id"><strong>Nomor WhatsApp</strong> – Jika Anda memilih fitur reminder WhatsApp, nomor yang Anda masukkan digunakan untuk mengirim reminder.</li>
+          <li data-lang="en"><strong>WhatsApp number</strong> – If you use the WhatsApp reminder feature, the number you enter is used to send reminders.</li>
+        </ul>
+
+        <h3 data-lang="id">Layanan Pihak Ketiga</h3>
+        <h3 data-lang="en">Third-Party Services</h3>
+        <p data-lang="id">
+          Kami menggunakan layanan pihak ketiga yang mungkin mengumpulkan informasi tambahan:
+        </p>
+        <p data-lang="en">
+          We use third-party services that may collect additional information:
+        </p>
+        <ul>
+          <li data-lang="id"><strong>Google Sign-In</strong> – Untuk autentikasi akun. Tunduk pada <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Kebijakan Privasi Google</a>.</li>
+          <li data-lang="en"><strong>Google Sign-In</strong> – For account authentication. Subject to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>.</li>
+          <li data-lang="id"><strong>Google AdMob</strong> – Menampilkan iklan. Dapat mengumpulkan data perangkat dan interaksi iklan. Lihat <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">Kebijakan AdMob</a>.</li>
+          <li data-lang="en"><strong>Google AdMob</strong> – For displaying ads. May collect device data and ad interactions. See <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">AdMob Policy</a>.</li>
+        </ul>
+
+        <h3 data-lang="id">Penggunaan Data</h3>
+        <h3 data-lang="en">Use of Data</h3>
+        <p data-lang="id">
+          Data digunakan untuk memberikan fitur aplikasi (login, reminder, backup ke Drive), menampilkan iklan yang relevan, dan meningkatkan pengalaman pengguna.
+        </p>
+        <p data-lang="en">
+          Data is used to provide app features (login, reminders, Drive backup), serve relevant ads, and improve user experience.
+        </p>
+
+        <h3 data-lang="id">Penyimpanan & Keamanan</h3>
+        <h3 data-lang="en">Storage & Security</h3>
+        <p data-lang="id">
+          Data to-do disimpan secara lokal di perangkat dan dapat disinkronkan ke Google Drive sesuai pilihan Anda. Kami menerapkan langkah-langkah yang wajar untuk melindungi data Anda.
+        </p>
+        <p data-lang="en">
+          To-do data is stored locally on your device and may be synced to Google Drive at your choice. We implement reasonable measures to protect your data.
+        </p>
+
+        <h3 data-lang="id">Hubungi Kami</h3>
+        <h3 data-lang="en">Contact Us</h3>
+        <p>
+          <span data-lang="id">Pertanyaan tentang privasi? Email kami di</span>
+          <span data-lang="en">Questions about privacy? Email us at</span>
+          <a href="mailto:hello@arie.my.id">hello@arie.my.id</a>
+        </p>
+
+        <p style="margin-top: 2rem; font-size: 0.9rem; color: rgba(255,255,255,0.6);">
+          <span data-lang="id">Terakhir diperbarui: Maret 2026</span>
+          <span data-lang="en">Last updated: March 2026</span>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 rProjects · EntarAja</p>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const langButtons = document.querySelectorAll('.lang-btn');
+      const langElements = document.querySelectorAll('[data-lang]:not(.lang-btn)');
+
+      function setLang(lang) {
+        langButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+        });
+        langElements.forEach(el => {
+          const langValue = el.getAttribute('data-lang');
+          el.classList.toggle('active', langValue === lang);
+        });
+      }
+
+      langButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+          setLang(this.getAttribute('data-lang'));
+        });
+      });
+
+      // Detect browser language and apply
+      const browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase().startsWith('id') ? 'id' : 'en';
+      setLang(browserLang);
+
+      // Handle #privacy in URL (scroll to section when opened via direct link)
+      if (window.location.hash === '#privacy') {
+        document.getElementById('privacy')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  </script>
+</body>
+</html>
