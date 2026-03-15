@@ -310,6 +310,8 @@
     <nav style="display: flex; align-items: center; gap: 1.5rem;">
       <a href="#privacy" class="privacy-link" data-lang="id">Kebijakan Privasi</a>
       <a href="#privacy" class="privacy-link" data-lang="en">Privacy Policy</a>
+      <a href="#delete-account" class="privacy-link" data-lang="id">Hapus Akun</a>
+      <a href="#delete-account" class="privacy-link" data-lang="en">Delete Account</a>
       <div class="lang-toggle">
       <button class="lang-btn active" data-lang="id" aria-label="Bahasa Indonesia">ID</button>
       <button class="lang-btn" data-lang="en" aria-label="English">EN</button>
@@ -431,6 +433,64 @@
         </p>
       </div>
     </section>
+
+    <!-- Delete Account -->
+    <section class="privacy" id="delete-account">
+      <h2 class="section-title" data-lang="id">Hapus Akun</h2>
+      <h2 class="section-title" data-lang="en">Delete Account</h2>
+
+      <div class="privacy-content">
+        <p data-lang="id">
+          <strong>EntarAja</strong> mendukung permintaan penghapusan akun sesuai kebijakan Google Play. Anda dapat meminta penghapusan akun aplikasi dan data yang terhubung dengannya kapan saja.
+        </p>
+        <p data-lang="en">
+          <strong>EntarAja</strong> supports account deletion requests in compliance with Google Play policy. You may request deletion of your app account and associated data at any time.
+        </p>
+
+        <h3 data-lang="id">Tentang Akun EntarAja</h3>
+        <h3 data-lang="en">About Your EntarAja Account</h3>
+        <p data-lang="id">
+          EntarAja menggunakan <strong>Google Sign-In</strong> untuk masuk. Akun Google Anda dikelola oleh Google dan tidak dihapus saat Anda menghapus akun EntarAja. Yang kami hapus adalah tautan antara EntarAja dengan akun Anda serta data yang disimpan oleh aplikasi kami.
+        </p>
+        <p data-lang="en">
+          EntarAja uses <strong>Google Sign-In</strong> to sign in. Your Google account is managed by Google and is not deleted when you delete your EntarAja account. What we delete is the link between EntarAja and your account, along with any data stored by our app.
+        </p>
+
+        <h3 data-lang="id">Data yang Akan Dihapus</h3>
+        <h3 data-lang="en">Data That Will Be Deleted</h3>
+        <ul>
+          <li data-lang="id"><strong>Data akun aplikasi</strong> – informasi pengguna dari Google (nama) yang kami simpan untuk personalisasi</li>
+          <li data-lang="en"><strong>App account data</strong> – user information from Google (name) that we store for personalization</li>
+          <li data-lang="id"><strong>Nomor WhatsApp</strong> – jika Anda menyimpan nomor untuk fitur reminder</li>
+          <li data-lang="en"><strong>WhatsApp number</strong> – if you have saved a number for the reminder feature</li>
+          <li data-lang="id"><strong>Data lokal</strong> – untuk menghapus data to-do di perangkat Anda, hapus data aplikasi (Pengaturan → Aplikasi → EntarAja → Hapus data) atau uninstall aplikasi</li>
+          <li data-lang="en"><strong>Local data</strong> – to delete to-do data on your device, clear app data (Settings → Apps → EntarAja → Clear data) or uninstall the app</li>
+        </ul>
+
+        <h3 data-lang="id">Backup di Google Drive</h3>
+        <h3 data-lang="en">Google Drive Backup</h3>
+        <p data-lang="id">
+          Jika Anda menggunakan fitur backup ke Drive, file tersimpan di akun Google Drive Anda sendiri. Kami tidak menyimpan salinan di server kami. Untuk menghapusnya, hapus file tersebut secara manual dari Google Drive Anda.
+        </p>
+        <p data-lang="en">
+          If you use the Drive backup feature, the file is stored in your own Google Drive account. We do not keep a copy on our servers. To delete it, remove the file manually from your Google Drive.
+        </p>
+
+        <h3 data-lang="id">Cara Meminta Penghapusan</h3>
+        <h3 data-lang="en">How to Request Deletion</h3>
+        <p data-lang="id">
+          Kirim email ke <a href="mailto:hello@arie.my.id?subject=EntarAja%20-%20Permintaan%20Hapus%20Akun">hello@arie.my.id</a> dengan subjek &ldquo;EntarAja - Permintaan Hapus Akun&rdquo;. Sertakan alamat email Google yang Anda gunakan untuk masuk ke EntarAja. Kami akan memproses permintaan dalam <strong>30 hari</strong>.
+        </p>
+        <p data-lang="en">
+          Send an email to <a href="mailto:hello@arie.my.id?subject=EntarAja%20-%20Account%20Deletion%20Request">hello@arie.my.id</a> with the subject &ldquo;EntarAja - Account Deletion Request&rdquo;. Include the Google email address you use to sign in to EntarAja. We will process your request within <strong>30 days</strong>.
+        </p>
+
+        <p style="margin-top: 2rem; font-size: 0.9rem; color: rgba(255,255,255,0.6);">
+          <span data-lang="id">Terakhir diperbarui: Maret 2026</span>
+          <span data-lang="en">Last updated: March 2026</span>
+        </p>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -462,9 +522,12 @@
       const browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase().startsWith('id') ? 'id' : 'en';
       setLang(browserLang);
 
-      // Handle #privacy in URL (scroll to section when opened via direct link)
-      if (window.location.hash === '#privacy') {
+      // Handle hash in URL (scroll to section when opened via direct link)
+      const hash = window.location.hash;
+      if (hash === '#privacy') {
         document.getElementById('privacy')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (hash === '#delete-account') {
+        document.getElementById('delete-account')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
   </script>
