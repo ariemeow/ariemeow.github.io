@@ -151,6 +151,23 @@
       height: 24px;
     }
 
+    .cta-btn--badge {
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+    }
+
+    .cta-btn--badge:hover {
+      box-shadow: none;
+      transform: translateY(-2px);
+    }
+
+    .cta-btn--badge img {
+      height: 48px;
+      width: auto;
+      display: block;
+    }
+
     /* Features */
     .features {
       padding: 5rem 1.5rem;
@@ -289,7 +306,7 @@
 </head>
 <body>
   <header>
-    <img src="aset/logoentaraja.png" alt="EntarAja" class="logo-small">
+    <img src="img/logoentaraja.png" alt="EntarAja" class="logo-small">
     <nav style="display: flex; align-items: center; gap: 1.5rem;">
       <a href="#privacy" class="privacy-link" data-lang="id">Kebijakan Privasi</a>
       <a href="#privacy" class="privacy-link" data-lang="en">Privacy Policy</a>
@@ -303,7 +320,7 @@
   <main>
     <!-- Hero -->
     <section class="hero">
-      <img src="aset/logoentaraja.png" alt="EntarAja" class="hero-logo">
+      <img src="img/logoentaraja.png" alt="EntarAja" class="hero-logo">
       <h1>EntarAja</h1>
       <p class="tagline" data-lang="id">Catat Rencanamu</p>
       <p class="tagline" data-lang="en">Record Your Plans</p>
@@ -315,10 +332,9 @@
         A simple to-do app to record your plans, send reminders to WhatsApp, and backup to Google Drive. Stay productive without hassle.
       </p>
 
-      <a href="https://play.google.com/store/apps/details?id=com.rprojects.entaraja" class="cta-btn" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5v-17c0-.83.67-1.5 1.5-1.5 0 0 1 .5.08l11.5 6.5-11.5 6.5c-.17.09-.33.14-.5.14-.83 0-1.5-.67-1.5-1.5zm14-6.5L6.5 6.5 17 12l.5-.5zM6.5 17.5l5-2.9-5-2.9v5.8z"/></svg>
-        <span data-lang="id">Unduh di Google Play</span>
-        <span data-lang="en">Download on Google Play</span>
+      <a href="https://play.google.com/store/apps/details?id=com.rprojects.entaraja" class="cta-btn cta-btn--badge" target="_blank" rel="noopener noreferrer">
+        <img src="img/GetItOnGooglePlay_Badge_Web_color_Indonesian.png" alt="Dapatkan di Google Play" data-lang="id">
+        <img src="img/GetItOnGooglePlay_Badge_Web_color_English.png" alt="Get it on Google Play" data-lang="en">
       </a>
     </section>
 
