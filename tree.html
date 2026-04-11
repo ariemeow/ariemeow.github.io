@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keluarga Besar H. Tamin &amp; Sariaman</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/7.0.0/fuse.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+    /* Tree SVG styles */
+    .link { fill: none; stroke-width: 1.5px; }
+    .node { cursor: pointer; }
+    .node rect { transition: filter 0.15s; }
+    .node:hover rect { filter: brightness(0.96) drop-shadow(0 3px 8px rgba(0,0,0,0.12)) !important; }
+    .toggle { cursor: pointer; }
+    .toggle:hover circle { stroke: #6b7280; }
+
+    /* Member panel transitions */
+    #member-panel { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Hide scrollbar for branch tabs */
+    #branch-tabs { scrollbar-width: none; -ms-overflow-style: none; }
+    #branch-tabs::-webkit-scrollbar { display: none; }
+
+    /* Tree canvas */
+    #tree-canvas { cursor: grab; }
+    #tree-canvas:active { cursor: grabbing; }
+
+    /* Mobile member panel (bottom sheet) */
+    @media (max-width: 767px) {
+      #member-panel {
+        top: auto !important;
+        bottom: 0 !important;
+        right: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        max-height: 72vh !important;
+        height: auto !important;
+        border-radius: 20px 20px 0 0;
+        transform: translateY(110%) !important;
+      }
+      #member-panel.panel-open { transform: translateY(0) !important; }
+    }
+
+    @media (min-width: 768px) {
+      #member-panel { transform: translateX(110%); }
+      #member-panel.panel-open { transform: translateX(0) !important; }
+    }
+
+    /* Pulse animation for WA dot */
+    @keyframes wa-pulse {
+      0%, 100% { opacity: 1; r: 4; }
+      50% { opacity: 0.6; r: 3.5; }
+    }
+    .wa-dot { animation: wa-pulse 2.5s ease-in-out infinite; }
+
+    /* View transition */
+    .view-enter { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Home gradient */
+    .hero-gradient { background: linear-gradient(135deg, #065f46 0%, #0d9488 60%, #0891b2 100%); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- ═══════════════════════════════════════════════════════════ NAVBAR ══ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 shadow-sm h-14 flex items-center px-3 sm:px-5 gap-3">
+
+  <!-- Logo -->
+  <button onclick="navigateTo('home')" class="shrink-0 flex items-center gap-2 hover:opacity-80 transition-opacity">
+    <div class="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center">
+      <span class="text-white text-xs font-bold">HT</span>
+    </div>
+    <span class="hidden sm:block text-sm font-semibold text-gray-800">H. Tamin</span>
+  </button>
+
+  <!-- Search bar -->
+  <div class="flex-1 max-w-lg mx-auto relative">
+    <div class="relative flex items-center">
+      <svg class="absolute left-3 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        id="search-input"
+        type="text"
+        placeholder="Cari anggota… (Ctrl+K)"
+        autocomplete="off"
+        class="w-full pl-9 pr-3 py-2 text-sm bg-gray-100 rounded-full border border-transparent focus:outline-none focus:bg-white focus:border-emerald-300 transition-all"
+      />
+    </div>
+    <!-- Search Dropdown -->
+    <div id="search-dropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden max-h-[420px] overflow-y-auto"></div>
+  </div>
+
+  <!-- Tree nav link -->
+  <button onclick="navigateTo('tree', { branch: null })" class="hidden sm:flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h6m-6 5h9m-9 5h12M17 3v18M17 7l4-4M17 7l-4-4"/>
+    </svg>
+    Pohon
+  </button>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════ VIEWS ══ -->
+<div id="app" class="pt-14">
+
+  <!-- ─────────────────────────────────────────────── HOME VIEW ── -->
+  <div id="view-home" class="min-h-[calc(100vh-3.5rem)]">
+
+    <!-- Hero -->
+    <div class="hero-gradient text-white py-14 px-4 text-center">
+      <p class="text-emerald-200 text-xs font-medium uppercase tracking-widest mb-3">Silsilah Keluarga</p>
+      <h1 class="text-3xl sm:text-4xl font-bold mb-1">Keluarga Besar</h1>
+      <p class="text-2xl sm:text-3xl font-light text-emerald-100">H. Tamin &amp; Sariaman</p>
+      <p class="mt-4 text-emerald-300 text-sm max-w-sm mx-auto">Telusuri pohon keluarga lintas generasi secara interaktif</p>
+    </div>
+
+    <!-- Stats bar -->
+    <div id="home-stats" class="flex justify-center gap-0 bg-white shadow-sm border-b border-gray-100"></div>
+
+    <!-- Home search -->
+    <div class="py-8 px-4 text-center bg-gray-50">
+      <div class="max-w-sm mx-auto relative">
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          id="home-search"
+          type="text"
+          placeholder="Cari nama, pasangan, atau kota…"
+          autocomplete="off"
+          class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-emerald-400 focus:bg-white bg-white text-sm shadow-sm transition-all"
+          oninput="syncHomeSearch(this.value)"
+          onkeydown="if(event.key==='Enter'){ AppState.lastSearchQuery=this.value; document.getElementById('search-input').value=this.value; navigateTo('search'); }"
+        />
+      </div>
+    </div>
+
+    <!-- Branch cards -->
+    <div class="px-4 pb-6 max-w-5xl mx-auto">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Cabang Keluarga</h2>
+      <div id="branch-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"></div>
+    </div>
+
+    <!-- Full tree button -->
+    <div class="pb-14 text-center">
+      <button onclick="navigateTo('tree', { branch: null })" class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-sm text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h6m-6 5h9m-9 5h12M17 3v18M17 7l4-4M17 7l-4-4"/>
+        </svg>
+        Lihat Pohon Lengkap
+      </button>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────── TREE VIEW ── -->
+  <div id="view-tree" class="hidden flex-col" style="height: calc(100vh - 3.5rem);">
+
+    <!-- Top bar -->
+    <div class="flex items-center gap-2 px-4 py-2 bg-white border-b border-gray-100 shrink-0">
+      <button onclick="navigateTo('home')" class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors shrink-0">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Beranda
+      </button>
+      <span class="text-gray-300">|</span>
+      <span id="tree-breadcrumb" class="text-xs text-gray-500 flex-1 truncate"></span>
+      <button onclick="resetTreeView()" class="shrink-0 text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Reset</button>
+      <button onclick="collapseAllNodes()" class="shrink-0 text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Ciutkan</button>
+    </div>
+
+    <!-- Branch filter tabs -->
+    <div id="branch-tabs" class="flex items-center gap-1.5 px-4 py-2 bg-white border-b border-gray-100 overflow-x-auto shrink-0 whitespace-nowrap"></div>
+
+    <!-- SVG Canvas -->
+    <div id="tree-canvas" class="flex-1 relative overflow-hidden bg-[#fafbfc]">
+      <svg id="tree-svg" class="w-full h-full">
+        <defs>
+          <filter id="card-shadow" x="-20%" y="-30%" width="140%" height="160%">
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.07)"/>
+          </filter>
+        </defs>
+        <g id="links-group"></g>
+        <g id="nodes-group"></g>
+      </svg>
+      <!-- Hint -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-gray-400 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm pointer-events-none select-none">
+        Scroll untuk zoom · Seret untuk geser · Klik node untuk detail
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────── MEMBER VIEW ── -->
+  <div id="view-member" class="hidden min-h-[calc(100vh-3.5rem)]">
+    <div class="max-w-2xl mx-auto px-4 py-6">
+      <button id="member-back-btn" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Kembali
+      </button>
+      <div id="member-content" class="view-enter"></div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────── SEARCH VIEW ── -->
+  <div id="view-search" class="hidden min-h-[calc(100vh-3.5rem)]">
+    <div class="max-w-2xl mx-auto px-4 py-6">
+      <div class="flex items-center justify-between mb-6">
+        <button id="search-back-btn" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Kembali
+        </button>
+        <button onclick="clearSearch()" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium transition-colors">Bersihkan</button>
+      </div>
+      <h2 id="search-heading" class="text-xl font-semibold text-gray-800 mb-4"></h2>
+      <div id="search-results-list" class="view-enter"></div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- ══════════════════════════════════════════════════ MEMBER PANEL ══ -->
+<div id="member-panel" class="fixed top-14 right-0 z-30 bg-white shadow-2xl overflow-y-auto" style="width: 320px; height: calc(100vh - 3.5rem);">
+  <div class="p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-gray-800 text-sm">Detail Anggota</h3>
+      <button onclick="closeMemberPanel()" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <!-- Mobile drag handle -->
+    <div class="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4 -mt-2"></div>
+    <div id="panel-content"></div>
+  </div>
+</div>
+
+<!-- Panel overlay (mobile backdrop) -->
+<div id="panel-overlay" class="hidden fixed inset-0 bg-black/30 z-20 backdrop-blur-[1px]" onclick="closeMemberPanel()"></div>
+
+<!-- ════════════════════════════════════════════════ AUTH OVERLAY ══ -->
+<div id="auth-overlay" class="hidden fixed inset-0 z-50 bg-gray-950/95 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+
+    <!-- Header -->
+    <div class="hero-gradient px-8 pt-8 pb-6 text-center">
+      <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-4">
+        <span class="text-white text-2xl font-bold">HT</span>
+      </div>
+      <h1 class="text-xl font-bold text-white">Keluarga Besar</h1>
+      <p class="text-emerald-100 text-sm font-light">H. Tamin &amp; Sariaman</p>
+    </div>
+
+    <!-- Form -->
+    <div class="px-8 py-7">
+      <p class="text-sm text-gray-500 text-center mb-6">Masukkan kata sandi keluarga untuk melanjutkan</p>
+
+      <div class="relative mb-4">
+        <input
+          id="password-input"
+          type="password"
+          placeholder="Kata sandi"
+          autocomplete="current-password"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-emerald-400 text-sm transition-colors pr-10"
+          onkeydown="if(event.key==='Enter') submitPassword()"
+        />
+        <button type="button" onclick="togglePasswordVisibility()"
+          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+          <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Error message -->
+      <p id="auth-error" class="hidden text-xs text-red-500 text-center mb-3 px-2"></p>
+
+      <!-- Loading -->
+      <div id="auth-loading" class="hidden flex items-center justify-center gap-2 text-sm text-gray-400 mb-3">
+        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        </svg>
+        Memuat data keluarga…
+      </div>
+
+      <!-- Submit button -->
+      <button id="auth-submit" onclick="submitPassword()"
+        class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-semibold rounded-xl transition-colors text-sm">
+        Masuk
+      </button>
+
+      <!-- Locked state -->
+      <p id="auth-locked" class="hidden text-xs text-gray-400 text-center mt-3">
+        Terlalu banyak percobaan salah. Muat ulang halaman untuk mencoba lagi.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════ SCRIPT ══ -->
+<script>
+
+// ── 0. CONFIG ────────────────────────────────────────────────────────────────
+// Set API_URL to your Cloudflare Worker (or leave empty '' to use embedded data)
+const API_URL = 'https://frosty-pine-0947.mochammadzachri.workers.dev/';
+
+// ── 1. SEED DATA (used only when API_URL is empty) ──────────────────────────
+const FAMILY_DATA = /* FAMILY_DATA_START */{
+  "id": "p0000",
+  "name": "Haji Tamin",
+  "spouse": "Sariaman",
+  "deceased": true,
+  "domisili": null,
+  "no_wa": null,
+  "branch": "root",
+  "generation": 0,
+  "children": []}/* FAMILY_DATA_END */;
+
+// ── 2. BRANCH CONFIG ────────────────────────────────────────────────────────
+const BRANCHES = [
+  { key: 'jan-tamin',       label: 'Jan Tamin',       dataBranch: '1. Jan Tamin',       color: '#3B82F6' },
+  { key: 'djailin-tamin',   label: 'Djailin Tamin',   dataBranch: '2. Djailin Tamin',   color: '#10B981' },
+  { key: 'zainal-tamin',    label: 'Zainal Tamin',    dataBranch: '3. Zainal Tamin',    color: '#8B5CF6' },
+  { key: 'karim-tamin',     label: 'Karim Tamin',     dataBranch: '4. Karim Tamin',     color: '#F97316' },
+  { key: 'syamsinar-tamin', label: 'Syamsinar Tamin', dataBranch: '5. Syamsinar Tamin', color: '#EC4899' },
+  { key: 'zainuddin-tamin', label: 'Zainuddin Tamin', dataBranch: '6. Zainuddin Tamin', color: '#14B8A6' },
+  { key: 'bahsiar-tamin',   label: 'Bahsiar Tamin',   dataBranch: '7. Bahsiar Tamin',   color: '#F59E0B' },
+  { key: 'syamsuar-tamin',  label: 'Syamsuar Tamin',  dataBranch: '8. Syamsuar Tamin',  color: '#EF4444' },
+  { key: 'adnis-tamin',     label: 'Adnis Tamin',     dataBranch: '9. AdnisTamin',      color: '#06B6D4' },
+];
+
+// ── 3. UTILITY FUNCTIONS ────────────────────────────────────────────────────
+
+function toTitleCase(str) {
+  if (!str) return '';
+  return str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
+function trunc(str, max) {
+  if (!str) return '';
+  return str.length > max ? str.slice(0, max - 1) + '…' : str;
+}
+
+function flattenTree(node, result = []) {
+  result.push(node);
+  (node.children || []).forEach(c => flattenTree(c, result));
+  return result;
+}
+
+// Data globals — populated by initWithData() after auth or embedded-mode boot
+let loadedData = null;   // the full tree root (used by renderTree)
+let allMembers = [];
+let nodeMap    = new Map();
+function findById(id) { return nodeMap.get(id) || null; }
+
+const parentMap = new Map();
+function buildParentMap(node, parent = null) {
+  if (parent) parentMap.set(node.id, parent);
+  (node.children || []).forEach(c => buildParentMap(c, node));
+}
+
+function getAncestors(id) {
+  const chain = [];
+  let current = findById(id);
+  while (current) {
+    chain.unshift(current);
+    current = parentMap.get(current.id) || null;
+  }
+  return chain;
+}
+
+function waLink(no_wa) {
+  if (!no_wa) return null;
+  const digits = no_wa.replace(/\D/g, '');
+  const intl = digits.startsWith('0') ? '62' + digits.slice(1) : digits;
+  return `https://wa.me/${intl}`;
+}
+
+function getBranchColor(branchValue) {
+  const b = BRANCHES.find(b => b.dataBranch === branchValue);
+  return b ? b.color : '#6B7280';
+}
+
+function getBranchLabel(branchValue) {
+  const b = BRANCHES.find(b => b.dataBranch === branchValue);
+  return b ? b.label : branchValue;
+}
+
+// ── 4. SEARCH SETUP (Fuse.js) ───────────────────────────────────────────────
+let fuse = null; // initialized in initWithData()
+const FUSE_OPTIONS = {
+  keys: [
+    { name: 'name',     weight: 0.6 },
+    { name: 'spouse',   weight: 0.3 },
+    { name: 'domisili', weight: 0.1 },
+  ],
+  threshold: 0.4,
+  includeScore: true,
+  minMatchCharLength: 2,
+};
+
+// ── 5. APP STATE ────────────────────────────────────────────────────────────
+const AppState = {
+  currentView:      'home',
+  previousView:     'home',
+  activeBranch:     null,
+  selectedMemberId: null,
+  lastSearchQuery:  '',
+  centerOnId:       null,
+};
+
+// ── 6. ROUTER ───────────────────────────────────────────────────────────────
+function navigateTo(view, params = {}) {
+  const views = ['home', 'tree', 'member', 'search'];
+
+  views.forEach(v => {
+    const el = document.getElementById(`view-${v}`);
+    if (el) {
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+    }
+  });
+
+  closeMemberPanel();
+  closeSearchDropdown();
+
+  if (view !== AppState.currentView) {
+    AppState.previousView = AppState.currentView;
+  }
+  AppState.currentView = view;
+
+  const el = document.getElementById(`view-${view}`);
+  if (el) {
+    el.classList.remove('hidden');
+    if (view === 'tree') el.classList.add('flex');
+  }
+
+  if (view === 'home') {
+    renderHome();
+  } else if (view === 'tree') {
+    if (params.branch !== undefined) AppState.activeBranch = params.branch;
+    AppState.centerOnId = params.centerId || null;
+    renderTree();
+  } else if (view === 'member') {
+    if (params.id) AppState.selectedMemberId = params.id;
+    renderMember(AppState.selectedMemberId);
+    window.scrollTo(0, 0);
+  } else if (view === 'search') {
+    renderSearchView();
+    window.scrollTo(0, 0);
+  }
+}
+
+// ── 7. HOME VIEW ────────────────────────────────────────────────────────────
+function renderHome() {
+  if (!allMembers.length) {
+    document.getElementById('home-stats').innerHTML =
+      '<p class="text-sm text-red-500 py-6 px-4">Data belum tersedia. Jalankan <code>node generate-index.cjs</code> untuk menyematkan data.</p>';
+    return;
+  }
+
+  const uniqueCities = new Set(allMembers.filter(m => m.domisili).map(m => m.domisili)).size;
+  const maxGen = Math.max(...allMembers.map(m => m.generation));
+
+  const stat = (value, label) => `
+    <div class="flex-1 py-5 text-center border-r border-gray-100 last:border-0">
+      <div class="text-2xl sm:text-3xl font-bold text-emerald-700">${value}</div>
+      <div class="text-xs text-gray-400 mt-1">${label}</div>
+    </div>`;
+
+  document.getElementById('home-stats').innerHTML =
+    stat(allMembers.length, 'Anggota') +
+    stat(maxGen + 1, 'Generasi') +
+    stat(uniqueCities, 'Kota');
+
+  const counts = {};
+  BRANCHES.forEach(b => {
+    counts[b.key] = allMembers.filter(m => m.branch === b.dataBranch).length;
+  });
+
+  document.getElementById('branch-cards').innerHTML = BRANCHES.map(b => `
+    <button
+      onclick="navigateTo('tree', { branch: '${b.key}' })"
+      class="group p-4 bg-white rounded-xl border-l-4 border-t border-r border-b border-gray-100 shadow-sm hover:shadow-md transition-all text-left"
+      style="border-left-color: ${b.color}"
+    >
+      <div class="font-semibold text-sm text-gray-800 mb-1">${b.label}</div>
+      <div class="text-xs text-gray-400">${counts[b.key]} anggota</div>
+    </button>
+  `).join('');
+}
+
+function syncHomeSearch(value) {
+  document.getElementById('search-input').value = value;
+  handleSearchInput(value);
+}
+
+// ── 8. TREE VIEW ────────────────────────────────────────────────────────────
+const NODE_W  = 168;
+const NODE_H  = 78;   // tall enough for 4 rows (name + spouse + city + ibu)
+const NODE_VG = 108;  // vertical gap between siblings
+const NODE_HG = 256;  // horizontal gap (depth)
+
+const treeState = {
+  svg:        null,
+  zoom:       null,
+  root:       null,
+};
+
+function renderTree() {
+  const branchKey = AppState.activeBranch;
+  let dataRoot;
+
+  const treeData = loadedData || FAMILY_DATA;
+  if (branchKey) {
+    const branch = BRANCHES.find(b => b.key === branchKey);
+    dataRoot = treeData.children && treeData.children.find(c => c.branch === branch.dataBranch);
+    document.getElementById('tree-breadcrumb').textContent = branch ? `Cabang: ${branch.label}` : '';
+  } else {
+    dataRoot = treeData;
+    document.getElementById('tree-breadcrumb').textContent = 'Pohon Lengkap';
+  }
+
+  if (!dataRoot) {
+    document.getElementById('tree-breadcrumb').textContent = 'Data tidak ditemukan';
+    return;
+  }
+
+  renderBranchTabs();
+  setupTreeSVG();
+
+  treeState.root = d3.hierarchy(dataRoot);
+  treeState.root.x0 = 0;
+  treeState.root.y0 = 0;
+
+  updateTree(treeState.root);
+
+  setTimeout(() => {
+    if (AppState.centerOnId) {
+      centerOnNode(AppState.centerOnId);
+      AppState.centerOnId = null;
+    } else {
+      fitTreeToView();
+    }
+  }, 80);
+}
+
+function renderBranchTabs() {
+  const active = AppState.activeBranch;
+  const allTab = `
+    <button
+      onclick="navigateTo('tree', { branch: null })"
+      class="shrink-0 px-3 py-1.5 text-xs rounded-full font-medium transition-colors ${!active ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+    >Semua</button>`;
+
+  const tabs = BRANCHES.map(b => `
+    <button
+      onclick="navigateTo('tree', { branch: '${b.key}' })"
+      class="shrink-0 px-3 py-1.5 text-xs rounded-full font-medium transition-colors"
+      style="${active === b.key ? `background:${b.color};color:white` : 'background:#f3f4f6;color:#4b5563'}"
+    >${b.label}</button>`).join('');
+
+  document.getElementById('branch-tabs').innerHTML = allTab + tabs;
+}
+
+function setupTreeSVG() {
+  d3.select('#links-group').selectAll('*').remove();
+  d3.select('#nodes-group').selectAll('*').remove();
+
+  const svg = d3.select('#tree-svg');
+
+  const zoom = d3.zoom()
+    .scaleExtent([0.05, 2.5])
+    .on('zoom', e => {
+      d3.select('#links-group').attr('transform', e.transform);
+      d3.select('#nodes-group').attr('transform', e.transform);
+    });
+
+  svg.call(zoom).on('dblclick.zoom', null);
+  treeState.svg  = svg;
+  treeState.zoom = zoom;
+}
+
+function updateTree(source) {
+  const layout = d3.tree().nodeSize([NODE_VG, NODE_HG]);
+  layout(treeState.root);
+
+  const nodes = treeState.root.descendants();
+  const links  = treeState.root.links();
+  const t = d3.transition().duration(280);
+  const sx = source.y0 ?? 0;
+  const sy = source.x0 ?? 0;
+
+  // ── Links ──────────────────────────────────────────────────────
+  const linksG = d3.select('#links-group');
+  const linkSel = linksG.selectAll('path.link').data(links, d => d.target.data.id);
+
+  linkSel.enter()
+    .append('path')
+    .attr('class', 'link')
+    .attr('stroke', d => getBranchColor(d.target.data.branch))
+    .attr('stroke-opacity', 0.35)
+    .attr('d', () => hBezier(sx, sy, sx, sy))
+    .merge(linkSel)
+    .transition(t)
+    .attr('stroke', d => getBranchColor(d.target.data.branch))
+    .attr('d', d => hBezier(d.source.y, d.source.x, d.target.y, d.target.x));
+
+  linkSel.exit()
+    .transition(t)
+    .attr('d', () => hBezier(source.y, source.x, source.y, source.x))
+    .remove();
+
+  // ── Nodes ──────────────────────────────────────────────────────
+  const nodesG  = d3.select('#nodes-group');
+  const nodeSel = nodesG.selectAll('g.node').data(nodes, d => d.data.id);
+  const NW2 = NODE_W / 2, NH2 = NODE_H / 2;
+
+  const nodeEnter = nodeSel.enter()
+    .append('g')
+    .attr('class', 'node')
+    .attr('transform', `translate(${sx},${sy})`)
+    .on('click', (event, d) => { event.stopPropagation(); openMemberPanel(d.data.id); });
+
+  // Card background
+  nodeEnter.append('rect')
+    .attr('x', -NW2).attr('y', -NH2)
+    .attr('width', NODE_W).attr('height', NODE_H)
+    .attr('rx', 8)
+    .attr('fill', 'white')
+    .attr('filter', 'url(#card-shadow)');
+
+  // Name
+  nodeEnter.append('text')
+    .attr('class', 'node-name')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '11')
+    .attr('font-weight', '600');
+
+  // Spouse
+  nodeEnter.append('text')
+    .attr('class', 'node-spouse')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '9')
+    .attr('fill', '#6b7280');
+
+  // City
+  nodeEnter.append('text')
+    .attr('class', 'node-city')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '9')
+    .attr('fill', '#9ca3af');
+
+  // WA dot
+  nodeEnter.filter(d => !!d.data.no_wa)
+    .append('circle')
+    .attr('class', 'wa-dot')
+    .attr('cx', NW2 - 9).attr('cy', -NH2 + 9)
+    .attr('r', 4).attr('fill', '#10b981');
+
+  // Remarried badge (↺) — bottom-left corner, only when marriages array has 2+ entries
+  nodeEnter.filter(d => d.data.marriages && d.data.marriages.length > 1)
+    .append('text')
+    .attr('class', 'remarried-badge')
+    .attr('x', -NW2 + 6).attr('y', NH2 - 5)
+    .attr('font-size', '9').attr('fill', '#3b82f6')
+    .attr('font-weight', '600')
+    .text('↺');
+
+  // Mother line — shown on child nodes when parent has multiple marriages
+  nodeEnter.append('text')
+    .attr('class', 'node-mother')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '8.5')
+    .attr('fill', '#a78bfa');  // soft purple — visually distinct from city gray
+
+  // Toggle (only nodes that have children in raw data)
+  const toggleEnter = nodeEnter.filter(d => d.data.children && d.data.children.length > 0)
+    .append('g')
+    .attr('class', 'toggle')
+    .attr('transform', `translate(${NW2 + 13},0)`)
+    .on('click', (event, d) => { event.stopPropagation(); toggleNode(d); });
+
+  toggleEnter.append('circle')
+    .attr('r', 9).attr('fill', 'white')
+    .attr('stroke', '#d1d5db').attr('stroke-width', 1.5);
+
+  toggleEnter.append('text')
+    .attr('class', 'toggle-icon')
+    .attr('text-anchor', 'middle').attr('dy', '4.5')
+    .attr('font-size', '14').attr('fill', '#6b7280');
+
+  // Tooltip
+  nodeEnter.append('title').text(d => {
+    const parts = [toTitleCase(d.data.name)];
+    if (d.data.spouse)   parts.push('& ' + toTitleCase(d.data.spouse));
+    if (d.data.domisili) parts.push('· ' + d.data.domisili);
+    if (d.data.deceased) parts.push('(alm.)');
+    return parts.join(' ');
+  });
+
+  // ── Merge enter + existing ──────────────────────────────────────
+  const nodeMerge = nodeSel.merge(nodeEnter);
+
+  nodeMerge.select('rect')
+    .attr('stroke', d => getBranchColor(d.data.branch))
+    .attr('stroke-width', 2)
+    .attr('stroke-dasharray', d => d.data.deceased ? '5,3' : 'none')
+    .attr('opacity', d => d.data.deceased ? 0.75 : 1);
+
+  // Dynamic vertical positions based on which rows are populated
+  // Rows: name | spouse-or-remarried | city | mother(ibu)
+  nodeMerge.select('.node-name')
+    .attr('fill', d => d.data.deceased ? '#9ca3af' : '#111827')
+    .attr('font-style', d => d.data.deceased ? 'italic' : 'normal')
+    .attr('y', d => {
+      const hasSpouseRow = !!(d.data.spouse || (d.data.marriages && d.data.marriages.length > 1));
+      const hasCityRow   = !!d.data.domisili;
+      const hasMotherRow = !!d.data.mother;
+      const rows = (hasSpouseRow ? 1 : 0) + (hasCityRow ? 1 : 0) + (hasMotherRow ? 1 : 0);
+      return rows === 3 ? -22 : rows === 2 ? -14 : rows === 1 ? -8 : 4;
+    })
+    .attr('dy', 0)
+    .text(d => trunc(toTitleCase(d.data.name), 22));
+
+  nodeMerge.select('.node-spouse')
+    .attr('fill', d => (d.data.marriages && d.data.marriages.length > 1) ? '#3b82f6' : '#6b7280')
+    .attr('y', d => {
+      const hasCityRow   = !!d.data.domisili;
+      const hasMotherRow = !!d.data.mother;
+      const belowRows    = (hasCityRow ? 1 : 0) + (hasMotherRow ? 1 : 0);
+      return belowRows === 2 ? -8 : belowRows === 1 ? -1 : 7;
+    })
+    .attr('dy', 0)
+    .text(d => {
+      if (d.data.marriages && d.data.marriages.length > 1) return '↺ menikah kembali';
+      return d.data.spouse ? '& ' + trunc(toTitleCase(d.data.spouse), 20) : '';
+    });
+
+  nodeMerge.select('.node-city')
+    .attr('y', d => {
+      const hasMotherRow = !!d.data.mother;
+      const hasSpouseRow = !!(d.data.spouse || (d.data.marriages && d.data.marriages.length > 1));
+      if (hasMotherRow && hasSpouseRow) return 8;
+      if (hasMotherRow) return 0;
+      return hasSpouseRow ? 15 : 7;
+    })
+    .attr('dy', 0)
+    .text(d => d.data.domisili ? trunc(toTitleCase(d.data.domisili), 20) : '');
+
+  nodeMerge.select('.node-mother')
+    .attr('y', d => {
+      const hasSpouseRow = !!(d.data.spouse || (d.data.marriages && d.data.marriages.length > 1));
+      const hasCityRow   = !!d.data.domisili;
+      if (hasSpouseRow && hasCityRow) return 22;
+      if (hasSpouseRow || hasCityRow) return 15;
+      return 7;
+    })
+    .attr('dy', 0)
+    .text(d => d.data.mother ? 'Ibu: ' + trunc(toTitleCase(d.data.mother), 16) : '');
+
+  nodeMerge.select('.toggle-icon')
+    .text(d => d.children ? '−' : '+');
+
+  nodeMerge.transition(t)
+    .attr('transform', d => `translate(${d.y},${d.x})`);
+
+  // ── Exit ───────────────────────────────────────────────────────
+  nodeSel.exit()
+    .transition(t)
+    .attr('transform', `translate(${source.y},${source.x})`)
+    .style('opacity', 0)
+    .remove();
+
+  // Store positions for next animation
+  nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+}
+
+// Horizontal bezier link: from (sx,sy) to (tx,ty) in SVG coords
+function hBezier(sx, sy, tx, ty) {
+  const mx = (sx + tx) / 2;
+  return `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`;
+}
+
+function toggleNode(d) {
+  if (d.children) {
+    d._children = d.children;
+    d.children = null;
+  } else {
+    d.children = d._children;
+    d._children = null;
+  }
+  updateTree(d);
+}
+
+function collapseAllNodes() {
+  function collapse(d) {
+    if (d.depth >= 1 && d.children) {
+      d._children = d.children;
+      d.children = null;
+    }
+    if (d._children) d._children.forEach(collapse);
+    if (d.children)  d.children.forEach(collapse);
+  }
+  if (treeState.root) {
+    collapse(treeState.root);
+    updateTree(treeState.root);
+    setTimeout(fitTreeToView, 320);
+  }
+}
+
+function fitTreeToView() {
+  const svgEl = document.getElementById('tree-svg');
+  const gEl   = document.getElementById('nodes-group');
+  if (!svgEl || !gEl) return;
+
+  const svgW = svgEl.clientWidth;
+  const svgH = svgEl.clientHeight;
+  let bbox;
+  try { bbox = gEl.getBBox(); } catch(e) { return; }
+  if (!bbox.width || !bbox.height) return;
+
+  const pad   = 60;
+  const scaleX = (svgW - pad * 2) / (bbox.width  + NODE_W + 30);
+  const scaleY = (svgH - pad * 2) / (bbox.height + NODE_H + 20);
+  const scale  = Math.min(scaleX, scaleY, 1.2);
+
+  const tx = (svgW - bbox.width  * scale) / 2 - bbox.x * scale;
+  const ty = (svgH - bbox.height * scale) / 2 - bbox.y * scale;
+
+  treeState.svg.transition().duration(500)
+    .call(treeState.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+}
+
+function resetTreeView() { fitTreeToView(); }
+
+function centerOnNode(id) {
+  const svgEl = document.getElementById('tree-svg');
+  if (!svgEl || !treeState.root) return;
+
+  let target = null;
+  treeState.root.each(d => { if (d.data.id === id) target = d; });
+  if (!target) return;
+
+  const W = svgEl.clientWidth;
+  const H = svgEl.clientHeight;
+  const scale = 1;
+  const tx = W / 2 - scale * target.y;
+  const ty = H / 2 - scale * target.x;
+
+  treeState.svg.transition().duration(500)
+    .call(treeState.zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+}
+
+// ── 9. MEMBER PANEL ─────────────────────────────────────────────────────────
+function openMemberPanel(id) {
+  const member = findById(id);
+  if (!member) return;
+  AppState.selectedMemberId = id;
+
+  const color       = getBranchColor(member.branch);
+  const branchLabel = getBranchLabel(member.branch);
+  const waUrl       = waLink(member.no_wa);
+
+  document.getElementById('panel-content').innerHTML = `
+    ${member.deceased ? '<div class="text-xs italic text-gray-400 mb-3">Almarhum / Almarhumah</div>' : ''}
+
+    <div class="mb-4">
+      <div class="flex items-start gap-2 mb-0.5">
+        <h2 class="flex-1 text-lg font-bold text-gray-900 leading-snug">${toTitleCase(member.name)}</h2>
+        ${member.deceased ? '<span class="shrink-0 mt-1 text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">alm.</span>' : ''}
+      </div>
+      ${spouseLineHtml(member)}
+    </div>
+
+    <div class="flex flex-wrap gap-1.5 mb-4">
+      <span class="text-xs px-2 py-1 rounded-full text-white font-medium" style="background:${color}">${branchLabel}</span>
+      <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">Generasi ${member.generation}</span>
+      ${member.marriages && member.marriages.length > 1 ? '<span class="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-500 border border-blue-100">↺ Menikah Kembali</span>' : ''}
+    </div>
+
+    ${member.mother ? `
+    <div class="flex items-center gap-2 text-sm text-violet-600 mb-2">
+      <svg class="w-4 h-4 text-violet-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+      <span class="text-gray-500">Ibu: <strong class="text-gray-700">${toTitleCase(member.mother)}</strong></span>
+    </div>` : ''}
+
+    ${member.domisili ? `
+    <div class="flex items-center gap-2 text-sm text-gray-600 mb-3">
+      <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      ${toTitleCase(member.domisili)}
+    </div>` : ''}
+
+    ${waUrl ? `
+    <a href="${waUrl}" target="_blank" rel="noopener noreferrer"
+       class="flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-2.5 rounded-xl mb-4 transition-colors">
+      <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      WhatsApp
+    </a>` : ''}
+
+    ${member.children && member.children.length > 0 ? `
+    <div class="mb-4">
+      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Anak (${member.children.length})</div>
+      ${panelChildrenHtml(member)}
+    </div>` : ''}
+
+    ${member.marriages && member.marriages.length > 1 ? `
+    <div class="mb-4 p-3 rounded-xl bg-blue-50 border border-blue-100">
+      <div class="text-xs font-semibold text-blue-600 mb-1.5">↺ Riwayat Pernikahan</div>
+      ${member.marriages.map(m => `
+        <div class="flex items-center justify-between py-1">
+          <span class="text-xs text-gray-700">${m.order}. ${toTitleCase(m.spouse)}</span>
+          ${m.status === 'cerai'
+            ? '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-500 font-medium">Cerai</span>'
+            : m.status === 'wafat'
+            ? '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-500 font-medium">Almarhumah</span>'
+            : '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-medium">Menikah</span>'}
+        </div>`).join('')}
+      <p class="text-[10px] text-blue-400 mt-1">Pernikahan berurutan, bukan bersamaan.</p>
+    </div>` : ''}
+
+    <div class="pt-4 border-t border-gray-100">
+      <button onclick="navigateTo('member', { id: '${id}' })"
+        class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors">
+        Lihat Detail Lengkap
+      </button>
+    </div>
+  `;
+
+  document.getElementById('member-panel').classList.add('panel-open');
+
+  const isMobile = window.innerWidth < 768;
+  if (isMobile) {
+    document.getElementById('panel-overlay').classList.remove('hidden');
+  }
+}
+
+function closeMemberPanel() {
+  const panel = document.getElementById('member-panel');
+  if (panel) panel.classList.remove('panel-open');
+  const overlay = document.getElementById('panel-overlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+// ── 10. MEMBER DETAIL VIEW ──────────────────────────────────────────────────
+// ── Marriage & children helpers ─────────────────────────────────────────────
+
+// Returns HTML for the spouse / marriage-history line shown under the member's name
+function spouseLineHtml(member) {
+  if (!member.marriages) {
+    return member.spouse
+      ? `<p class="text-sm text-gray-500 mt-0.5">& ${toTitleCase(member.spouse)}</p>`
+      : '';
+  }
+  return member.marriages.map(m => `
+    <div class="flex items-center gap-2 mt-0.5">
+      <span class="text-sm text-gray-500">& ${toTitleCase(m.spouse)}</span>
+      ${m.status === 'cerai'
+        ? '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-500 font-semibold border border-orange-200">Cerai</span>'
+        : m.status === 'wafat'
+        ? '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-semibold border border-gray-200">Almarhumah</span>'
+        : '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-semibold border border-emerald-200">Menikah</span>'}
+    </div>`).join('');
+}
+
+// Returns the full "Riwayat Pernikahan" card HTML when member has multiple marriages
+function marriageHistoryCardHtml(member) {
+  if (!member.marriages || member.marriages.length < 2) return '';
+  return `
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Riwayat Pernikahan</div>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-500 font-semibold border border-blue-100">Menikah Kembali</span>
+      </div>
+      <div class="space-y-3">
+        ${member.marriages.map(m => `
+          <div class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0 text-xs font-bold text-gray-500">${m.order}</div>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-800">${toTitleCase(m.spouse)}</div>
+              <div class="text-xs text-gray-400">Pernikahan ke-${m.order}</div>
+            </div>
+            ${m.status === 'cerai'
+              ? '<span class="text-xs px-2 py-1 rounded-lg bg-orange-50 text-orange-500 font-medium border border-orange-100">Cerai</span>'
+              : m.status === 'wafat'
+              ? '<span class="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-500 font-medium border border-gray-200">Almarhumah</span>'
+              : '<span class="text-xs px-2 py-1 rounded-lg bg-emerald-50 text-emerald-600 font-medium border border-emerald-100">Menikah</span>'}
+          </div>`).join('')}
+      </div>
+      <p class="mt-3 text-xs text-gray-400 leading-relaxed">
+        * Pernikahan bersifat <strong>berurutan</strong>, bukan bersamaan.
+      </p>
+    </div>`;
+}
+
+// Returns the children section HTML, grouped by mother when mother fields are present
+function childrenSectionHtml(member) {
+  if (!member.children || member.children.length === 0) return '';
+
+  const hasMothers = member.children.some(c => c.mother);
+
+  if (!hasMothers) {
+    // Flat list (no remarriage data)
+    return `
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Anak (${member.children.length})</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          ${member.children.map(c => childCardHtml(c)).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Group by mother
+  const groups = {};
+  const order  = [];
+  member.children.forEach(c => {
+    const key = c.mother || '—';
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(c);
+  });
+
+  return `
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Anak (${member.children.length})</div>
+      <div class="space-y-5">
+        ${order.map(motherName => {
+          const children = groups[motherName];
+          // find the marriage order for this mother
+          const m = member.marriages && member.marriages.find(m => toTitleCase(m.spouse) === toTitleCase(motherName));
+          const orderLabel = m ? `Pernikahan ke-${m.order}` : '';
+          const isCerai    = m && m.status === 'cerai';
+          return `
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs text-gray-500 font-medium">Dari ${toTitleCase(motherName)}</span>
+                ${orderLabel ? `<span class="text-[10px] text-gray-400">(${orderLabel})</span>` : ''}
+                ${isCerai ? '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-400 border border-orange-100">Cerai</span>' : ''}
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                ${children.map(c => childCardHtml(c)).join('')}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+// Compact children list for the slide-in panel (grouped by mother when available)
+function panelChildrenHtml(member) {
+  const hasMothers = member.children.some(c => c.mother);
+  const MAX = 6;
+
+  if (!hasMothers) {
+    return `<div class="space-y-0.5">
+      ${member.children.slice(0, MAX).map(c => `
+        <button onclick="openMemberPanel('${c.id}')"
+          class="block w-full text-left text-sm text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 px-2 py-1.5 rounded-lg transition-colors truncate">
+          ${toTitleCase(c.name)}
+        </button>`).join('')}
+      ${member.children.length > MAX ? `<p class="text-xs text-gray-400 px-2">+${member.children.length - MAX} lainnya</p>` : ''}
+    </div>`;
+  }
+
+  const groups = {};
+  const order  = [];
+  member.children.forEach(c => {
+    const key = c.mother || '—';
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(c);
+  });
+
+  return order.map(motherName => {
+    const children = groups[motherName];
+    const m = member.marriages && member.marriages.find(m => toTitleCase(m.spouse) === toTitleCase(motherName));
+    return `
+      <div class="mb-2">
+        <div class="flex items-center gap-1.5 mb-1 px-2">
+          <span class="text-[10px] text-gray-400">Dari ${toTitleCase(motherName)}</span>
+          ${m && m.status === 'cerai' ? '<span class="text-[10px] text-orange-400">(cerai)</span>' : ''}
+        </div>
+        <div class="space-y-0.5">
+          ${children.map(c => `
+            <button onclick="openMemberPanel('${c.id}')"
+              class="block w-full text-left text-sm text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 px-2 py-1.5 rounded-lg transition-colors truncate">
+              ${toTitleCase(c.name)}
+            </button>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function childCardHtml(c) {
+  return `
+    <button onclick="navigateTo('member', { id: '${c.id}' })"
+      class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 transition-all text-left group">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:${getBranchColor(c.branch)}">
+        ${toTitleCase(c.name).charAt(0)}
+      </div>
+      <div class="min-w-0">
+        <div class="text-sm font-medium text-gray-800 truncate group-hover:text-emerald-700 transition-colors">${toTitleCase(c.name)}</div>
+        ${c.domisili ? `<div class="text-xs text-gray-400 truncate">${toTitleCase(c.domisili)}</div>` : ''}
+      </div>
+    </button>`;
+}
+
+// ── 10. MEMBER DETAIL VIEW ──────────────────────────────────────────────────
+function renderMember(id) {
+  const member = findById(id);
+  if (!member) {
+    document.getElementById('member-content').innerHTML =
+      '<p class="text-gray-400 text-sm">Anggota tidak ditemukan.</p>';
+    return;
+  }
+
+  const ancestors   = getAncestors(id);
+  const color       = getBranchColor(member.branch);
+  const branchLabel = getBranchLabel(member.branch);
+  const waUrl       = waLink(member.no_wa);
+
+  document.getElementById('member-back-btn').onclick = () => navigateTo(AppState.previousView);
+
+  document.getElementById('member-content').innerHTML = `
+
+    <!-- Profile card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
+      <div class="flex items-start gap-3 mb-4">
+        <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0" style="background:${color}">
+          ${toTitleCase(member.name).charAt(0)}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-xl font-bold text-gray-900">${toTitleCase(member.name)}</h1>
+            ${member.deceased ? '<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">alm.</span>' : ''}
+          </div>
+          ${spouseLineHtml(member)}
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-5">
+        <span class="text-xs px-3 py-1 rounded-full text-white font-medium" style="background:${color}">${branchLabel}</span>
+        <span class="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600">Generasi ${member.generation}</span>
+        ${member.deceased ? '<span class="text-xs px-3 py-1 rounded-full bg-gray-50 text-gray-400 italic">Almarhum/ah</span>' : ''}
+        ${member.marriages && member.marriages.length > 1 ? '<span class="text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-500 border border-blue-100">↺ Menikah Kembali</span>' : ''}
+      </div>
+
+      <div class="space-y-3">
+        ${member.mother ? `
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+          </div>
+          <div>
+            <div class="text-xs text-gray-400">Ibu kandung</div>
+            <div class="text-sm font-medium text-gray-800">${toTitleCase(member.mother)}</div>
+          </div>
+        </div>` : ''}
+
+        ${member.domisili ? `
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <div>
+            <div class="text-xs text-gray-400">Domisili</div>
+            <div class="text-sm font-medium text-gray-800">${toTitleCase(member.domisili)}</div>
+          </div>
+        </div>` : ''}
+
+        ${member.no_wa ? `
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          </div>
+          <div class="flex-1">
+            <div class="text-xs text-gray-400">WhatsApp</div>
+            <a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-emerald-600 hover:underline">${member.no_wa}</a>
+          </div>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <!-- Ancestry path -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Jalur Silsilah</div>
+      <div class="flex flex-wrap items-center gap-1">
+        ${ancestors.map((anc, i) => `
+          <button onclick="navigateTo('member', { id: '${anc.id}' })"
+            class="text-sm ${anc.id === id ? 'font-bold text-gray-900 cursor-default' : 'text-emerald-600 hover:text-emerald-800 hover:underline transition-colors'}">
+            ${toTitleCase(anc.name)}
+          </button>
+          ${i < ancestors.length - 1 ? '<svg class="w-3 h-3 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>' : ''}
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- Marriage history (only shown when multiple marriages) -->
+    ${marriageHistoryCardHtml(member)}
+
+    <!-- Children (grouped by mother when available) -->
+    ${childrenSectionHtml(member)}
+
+    <!-- View in tree -->
+    <div class="pb-10">
+      <button onclick="viewInTree('${id}')"
+        class="w-full py-3 border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h6m-6 5h9m-9 5h12M17 3v18M17 7l4-4M17 7l-4-4"/></svg>
+        Lihat di Pohon
+      </button>
+    </div>
+  `;
+}
+
+function viewInTree(id) {
+  const member = findById(id);
+  if (!member) return;
+  // Always use "all" so the node is guaranteed to be visible
+  navigateTo('tree', { branch: null, centerId: id });
+}
+
+// ── 11. SEARCH ──────────────────────────────────────────────────────────────
+let searchTimer = null;
+
+function handleSearchInput(query) {
+  AppState.lastSearchQuery = query;
+  clearTimeout(searchTimer);
+
+  if (!query || query.length < 2) {
+    closeSearchDropdown();
+    return;
+  }
+
+  searchTimer = setTimeout(() => {
+    if (!fuse) return;
+    const results = fuse.search(query).slice(0, 8);
+    renderSearchDropdown(results, query);
+  }, 200);
+}
+
+function renderSearchDropdown(results, query) {
+  const dropdown = document.getElementById('search-dropdown');
+
+  if (!results.length) {
+    dropdown.innerHTML = `<div class="px-4 py-6 text-center text-sm text-gray-400">Tidak ada hasil untuk "<strong>${query}</strong>"</div>`;
+    dropdown.classList.remove('hidden');
+    return;
+  }
+
+  const items = results.map(r => {
+    const m = r.item;
+    const c = getBranchColor(m.branch);
+    return `
+      <button onclick="navigateTo('member', { id: '${m.id}' }); closeSearchDropdown();"
+        class="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 text-left border-b border-gray-50 last:border-0 transition-colors">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0" style="background:${c}">
+          ${toTitleCase(m.name).charAt(0)}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-gray-800 truncate">${toTitleCase(m.name)}</div>
+          <div class="text-xs text-gray-400 flex items-center gap-1.5 mt-0.5">
+            ${m.spouse   ? `<span>& ${toTitleCase(m.spouse)}</span>`    : ''}
+            ${m.domisili ? `<span class="text-gray-300">·</span><span>${toTitleCase(m.domisili)}</span>` : ''}
+          </div>
+        </div>
+        <span class="text-[10px] px-1.5 py-0.5 rounded text-white shrink-0 font-medium" style="background:${c}">G${m.generation}</span>
+      </button>`;
+  }).join('');
+
+  dropdown.innerHTML = items + `
+    <button onclick="navigateTo('search'); closeSearchDropdown();"
+      class="w-full px-4 py-3 text-center text-sm text-emerald-600 hover:bg-emerald-50 font-medium transition-colors">
+      Lihat semua hasil →
+    </button>`;
+
+  dropdown.classList.remove('hidden');
+}
+
+function closeSearchDropdown() {
+  document.getElementById('search-dropdown').classList.add('hidden');
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  const hs = document.getElementById('home-search');
+  if (hs) hs.value = '';
+  AppState.lastSearchQuery = '';
+  closeSearchDropdown();
+  navigateTo('home');
+}
+
+function renderSearchView() {
+  const query = AppState.lastSearchQuery;
+
+  document.getElementById('search-heading').textContent =
+    query ? `Hasil: "${query}"` : 'Pencarian';
+
+  document.getElementById('search-back-btn').onclick = () => navigateTo(AppState.previousView);
+
+  if (!query || query.length < 2) {
+    document.getElementById('search-results-list').innerHTML =
+      '<p class="text-sm text-gray-400 text-center py-10">Masukkan kata kunci di bilah pencarian di atas.</p>';
+    return;
+  }
+
+  if (!fuse) return;
+  const results = fuse.search(query);
+
+  if (!results.length) {
+    document.getElementById('search-results-list').innerHTML =
+      `<p class="text-sm text-gray-400 text-center py-10">Tidak ada hasil untuk "<strong>${query}</strong>".</p>`;
+    return;
+  }
+
+  document.getElementById('search-results-list').innerHTML = `
+    <p class="text-xs text-gray-400 mb-4">${results.length} hasil ditemukan</p>
+    <div class="space-y-2">
+      ${results.map(r => {
+        const m = r.item;
+        const c = getBranchColor(m.branch);
+        return `
+          <button onclick="navigateTo('member', { id: '${m.id}' })"
+            class="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-100 hover:border-emerald-200 hover:shadow-sm transition-all text-left group">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0" style="background:${c}">
+              ${toTitleCase(m.name).charAt(0)}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-gray-900 group-hover:text-emerald-700 transition-colors">${toTitleCase(m.name)}</div>
+              ${m.spouse ? `<div class="text-sm text-gray-500">& ${toTitleCase(m.spouse)}</div>` : ''}
+              <div class="flex items-center gap-2 mt-1 flex-wrap">
+                ${m.domisili ? `<span class="text-xs text-gray-400">📍 ${toTitleCase(m.domisili)}</span>` : ''}
+                <span class="text-xs px-1.5 py-0.5 rounded text-white font-medium" style="background:${c}">Gen. ${m.generation}</span>
+                ${m.deceased ? '<span class="text-xs text-gray-400 italic">alm.</span>' : ''}
+              </div>
+            </div>
+            <svg class="w-4 h-4 text-gray-300 group-hover:text-emerald-400 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>`;
+      }).join('')}
+    </div>`;
+}
+
+// ── 12. KEYBOARD SHORTCUTS & EVENTS ─────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    const inp = document.getElementById('search-input');
+    inp.focus(); inp.select();
+  }
+  if (e.key === 'Escape') {
+    closeSearchDropdown();
+    closeMemberPanel();
+  }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  const dropdown = document.getElementById('search-dropdown');
+  const input    = document.getElementById('search-input');
+  if (!dropdown.contains(e.target) && e.target !== input) {
+    closeSearchDropdown();
+  }
+});
+
+// Navbar search input
+document.getElementById('search-input').addEventListener('input', e => {
+  handleSearchInput(e.target.value);
+  // sync back to home search bar if visible
+  const hs = document.getElementById('home-search');
+  if (hs) hs.value = e.target.value;
+  // live-update search view if currently open
+  if (AppState.currentView === 'search') renderSearchView();
+});
+
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    AppState.lastSearchQuery = e.target.value;
+    closeSearchDropdown();
+    navigateTo('search');
+  }
+});
+
+// ── 13. INIT WITH DATA ──────────────────────────────────────────────────────
+function initWithData(data) {
+  loadedData = data;
+  allMembers = flattenTree(data);
+  nodeMap    = new Map();
+  allMembers.forEach(n => nodeMap.set(n.id, n));
+  parentMap.clear();
+  buildParentMap(data);
+  fuse = new Fuse(allMembers, FUSE_OPTIONS);
+  navigateTo('home');
+}
+
+// ── 14. AUTH ────────────────────────────────────────────────────────────────
+const MAX_ATTEMPTS = 5;
+let   authAttempts = 0;
+let   authLocked   = false;
+
+function showAuthOverlay() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('password-input').focus(), 100);
+}
+
+function hideAuthOverlay() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+
+function setAuthState(state, message = '') {
+  const errorEl   = document.getElementById('auth-error');
+  const loadingEl = document.getElementById('auth-loading');
+  const submitEl  = document.getElementById('auth-submit');
+  const lockedEl  = document.getElementById('auth-locked');
+
+  errorEl.classList.add('hidden');
+  loadingEl.classList.add('hidden');
+  lockedEl.classList.add('hidden');
+  submitEl.disabled = false;
+
+  if (state === 'loading') {
+    loadingEl.classList.remove('hidden');
+    submitEl.disabled = true;
+  } else if (state === 'error') {
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+    document.getElementById('password-input').focus();
+    document.getElementById('password-input').select();
+  } else if (state === 'locked') {
+    submitEl.disabled = true;
+    lockedEl.classList.remove('hidden');
+    document.getElementById('password-input').disabled = true;
+  }
+}
+
+async function submitPassword() {
+  if (authLocked) return;
+
+  const input    = document.getElementById('password-input');
+  const password = input.value.trim();
+  if (!password) {
+    setAuthState('error', 'Masukkan kata sandi terlebih dahulu.');
+    return;
+  }
+
+  setAuthState('loading');
+
+  try {
+    const res = await fetch(API_URL, {
+      method:  'GET',
+      headers: { 'X-Family-Password': password },
+    });
+
+    if (res.status === 401) {
+      authAttempts++;
+      const left = MAX_ATTEMPTS - authAttempts;
+      if (left <= 0) {
+        authLocked = true;
+        setAuthState('locked');
+      } else {
+        setAuthState('error', `Kata sandi salah. ${left} percobaan tersisa.`);
+      }
+      return;
+    }
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+
+    // Save password + data to session (clears when tab closes)
+    sessionStorage.setItem('ft_auth', password);
+    try { sessionStorage.setItem('ft_data', JSON.stringify(data)); } catch(_) {}
+
+    hideAuthOverlay();
+    initWithData(data);
+
+  } catch (err) {
+    setAuthState('error', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
+    console.error('[Auth] fetch error:', err);
+  }
+}
+
+function togglePasswordVisibility() {
+  const input = document.getElementById('password-input');
+  input.type  = input.type === 'password' ? 'text' : 'password';
+}
+
+// ── 15. BOOT ─────────────────────────────────────────────────────────────────
+(async function boot() {
+  const isApiMode = API_URL && API_URL !== 'YOUR_API_URL_HERE' && API_URL !== '';
+
+  if (!isApiMode) {
+    // ── Embedded mode: use baked-in FAMILY_DATA ──────────────────────────────
+    if (FAMILY_DATA && FAMILY_DATA.id) {
+      initWithData(FAMILY_DATA);
+    } else {
+      document.getElementById('app').innerHTML = `
+        <div class="min-h-screen flex items-center justify-center p-8 text-center">
+          <div>
+            <p class="text-gray-500 text-sm mb-4">Data belum tersedia.</p>
+            <p class="text-gray-400 text-xs">Jalankan <code class="bg-gray-100 px-1 rounded">node generate-index.cjs</code> untuk menyematkan data,
+              atau set <code class="bg-gray-100 px-1 rounded">API_URL</code> untuk mode API.</p>
+          </div>
+        </div>`;
+    }
+    return;
+  }
+
+  // ── API mode: check session cache first, then show modal ─────────────────
+  const savedPassword = sessionStorage.getItem('ft_auth');
+  const savedData     = sessionStorage.getItem('ft_data');
+
+  if (savedPassword && savedData) {
+    // Use cached data — no re-fetch, no 401
+    try {
+      const data = JSON.parse(savedData);
+      initWithData(data);
+      return;
+    } catch (_) {
+      // Corrupted cache — clear and fall through to modal
+      sessionStorage.removeItem('ft_auth');
+      sessionStorage.removeItem('ft_data');
+    }
+  }
+
+  showAuthOverlay();
+})();
+
+</script>
+</body>
+</html>
