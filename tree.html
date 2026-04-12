@@ -184,6 +184,13 @@
         </svg>
         Perbarui Data
       </button>
+      <button onclick="downloadGEDCOM()" class="shrink-0 text-xs px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors flex items-center gap-1">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Export .ged
+      </button>
     </div>
 
     <!-- Branch filter tabs -->
@@ -1432,6 +1439,156 @@ document.getElementById('search-input').addEventListener('keydown', e => {
     navigateTo('search');
   }
 });
+
+// ── 13. GEDCOM EXPORT ───────────────────────────────────────────────────────
+function buildGEDCOM() {
+  const lines = [];
+  const today = new Date();
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const dateStr = `${String(today.getDate()).padStart(2,'0')} ${months[today.getMonth()]} ${today.getFullYear()}`;
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  lines.push('0 HEAD');
+  lines.push('1 SOUR FamilyTreeApp');
+  lines.push('2 NAME Pohon Keluarga H. Tamin');
+  lines.push('1 DATE ' + dateStr);
+  lines.push('1 GEDC');
+  lines.push('2 VERS 5.5.1');
+  lines.push('2 FORM LINEAGE-LINKED');
+  lines.push('1 CHAR UTF-8');
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const pid  = id  => `@${id}@`;           // person xref  e.g. @p0001@
+  const sid  = n   => `@S${String(n).padStart(4,'0')}@`; // spouse xref
+  const fid  = n   => `@F${String(n).padStart(4,'0')}@`; // family xref
+
+  // Spouse name → xref (deduplicated)
+  const spouseXref = new Map();
+  let spouseIdx = 1;
+  function getSpouseXref(name) {
+    if (!name) return null;
+    const key = name.trim().toLowerCase();
+    if (!spouseXref.has(key)) spouseXref.set(key, { xref: sid(spouseIdx++), name: name.trim() });
+    return spouseXref.get(key);
+  }
+
+  // ── Build FAM records ─────────────────────────────────────────────────────
+  const famRecords = [];
+  let famIdx = 1;
+
+  for (const person of allMembers) {
+    const children = person.children || [];
+
+    if (person.marriages && person.marriages.length > 1) {
+      // One FAM per marriage; group children by mother
+      for (const m of person.marriages) {
+        const sp = getSpouseXref(m.spouse);
+        const famChildren = children.filter(c => c.mother === m.spouse);
+        famRecords.push({
+          xref:     fid(famIdx++),
+          husbXref: pid(person.id),
+          wifeXref: sp ? sp.xref : null,
+          children: famChildren.map(c => pid(c.id)),
+          status:   m.status,
+        });
+      }
+    } else {
+      const spouseName = person.spouse || null;
+      const sp = spouseName ? getSpouseXref(spouseName) : null;
+      if (children.length > 0 || spouseName) {
+        famRecords.push({
+          xref:     fid(famIdx++),
+          husbXref: pid(person.id),
+          wifeXref: sp ? sp.xref : null,
+          children: children.map(c => pid(c.id)),
+          status:   null,
+        });
+      }
+    }
+  }
+
+  // ── Lookup maps for FAMS / FAMC ───────────────────────────────────────────
+  const famsMap = new Map(); // personXref → [famXref]
+  const famcMap = new Map(); // childXref  → famXref
+
+  for (const fam of famRecords) {
+    if (fam.husbXref) {
+      if (!famsMap.has(fam.husbXref)) famsMap.set(fam.husbXref, []);
+      famsMap.get(fam.husbXref).push(fam.xref);
+    }
+    if (fam.wifeXref) {
+      if (!famsMap.has(fam.wifeXref)) famsMap.set(fam.wifeXref, []);
+      famsMap.get(fam.wifeXref).push(fam.xref);
+    }
+    for (const cxref of fam.children) {
+      famcMap.set(cxref, fam.xref);
+    }
+  }
+
+  // ── INDI records — family members ─────────────────────────────────────────
+  for (const person of allMembers) {
+    const xref = pid(person.id);
+    lines.push(`0 ${xref} INDI`);
+    lines.push(`1 NAME ${(person.name || 'Unknown').trim()} //`);
+    lines.push(`2 GIVN ${(person.name || 'Unknown').trim()}`);
+
+    if (person.deceased) lines.push('1 DEAT Y');
+
+    if (person.domisili) {
+      lines.push('1 RESI');
+      lines.push(`2 PLAC ${person.domisili}`);
+    }
+
+    if (person.no_wa) lines.push(`1 NOTE WA: ${person.no_wa}`);
+    if (person.branch) lines.push(`1 NOTE Cabang: ${person.branch}`);
+
+    for (const famXref of (famsMap.get(xref) || [])) lines.push(`1 FAMS ${famXref}`);
+    const famcXref = famcMap.get(xref);
+    if (famcXref) lines.push(`1 FAMC ${famcXref}`);
+  }
+
+  // ── INDI records — spouses (name-only, not in main tree) ─────────────────
+  for (const { xref, name } of spouseXref.values()) {
+    lines.push(`0 ${xref} INDI`);
+    lines.push(`1 NAME ${name} //`);
+    lines.push(`2 GIVN ${name}`);
+    for (const famXref of (famsMap.get(xref) || [])) lines.push(`1 FAMS ${famXref}`);
+  }
+
+  // ── FAM records ───────────────────────────────────────────────────────────
+  for (const fam of famRecords) {
+    lines.push(`0 ${fam.xref} FAM`);
+    if (fam.husbXref) lines.push(`1 HUSB ${fam.husbXref}`);
+    if (fam.wifeXref) lines.push(`1 WIFE ${fam.wifeXref}`);
+    if (fam.status === 'cerai') {
+      lines.push('1 DIV Y');
+    } else if (fam.status === 'wafat') {
+      lines.push('1 MARR');
+      lines.push('2 NOTE Pasangan wafat');
+    }
+    for (const cxref of fam.children) lines.push(`1 CHIL ${cxref}`);
+  }
+
+  lines.push('0 TRLR');
+  return lines.join('\r\n'); // GEDCOM spec requires CRLF
+}
+
+function downloadGEDCOM() {
+  if (!allMembers.length) {
+    alert('Data belum dimuat. Masuk terlebih dahulu.');
+    return;
+  }
+  const content  = buildGEDCOM();
+  const blob     = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url      = URL.createObjectURL(blob);
+  const a        = document.createElement('a');
+  a.href         = url;
+  a.download     = 'keluarga-h-tamin.ged';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 // ── 13. INIT WITH DATA ──────────────────────────────────────────────────────
 function initWithData(data) {
