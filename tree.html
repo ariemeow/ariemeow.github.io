@@ -70,6 +70,31 @@
 
     /* Home gradient */
     .hero-gradient { background: linear-gradient(135deg, #065f46 0%, #0d9488 60%, #0891b2 100%); }
+
+    /* ── Mobile-specific ──────────────────────────────────────────────────── */
+    /* Bottom tab bar */
+    #mobile-tab-bar { padding-bottom: env(safe-area-inset-bottom); }
+    .mob-tab-active svg, .mob-tab-active span { color: #059669 !important; }
+
+    @media (max-width: 767px) {
+      /* Account for bottom tab bar in all scrollable views */
+      #view-home, #view-member, #view-search {
+        padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+      }
+      /* Tree view height: minus top nav AND bottom tab bar */
+      #view-tree {
+        height: calc(100dvh - 3.5rem - 52px - env(safe-area-inset-bottom)) !important;
+      }
+      /* Member panel safe area */
+      #member-panel { padding-bottom: env(safe-area-inset-bottom); }
+      /* Hide desktop "Beranda" back link in tree toolbar (use bottom tabs instead) */
+      #tree-back-btn { display: none; }
+      #tree-back-sep { display: none; }
+      /* Tree toolbar hint text: hide on mobile */
+      #tree-hint { display: none !important; }
+      /* Show pinch hint on mobile */
+      #tree-hint-mobile { display: block !important; }
+    }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
@@ -168,29 +193,37 @@
   <div id="view-tree" class="hidden flex-col" style="height: calc(100vh - 3.5rem);">
 
     <!-- Top bar -->
-    <div class="flex items-center gap-2 px-4 py-2 bg-white border-b border-gray-100 shrink-0">
-      <button onclick="navigateTo('home')" class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors shrink-0">
+    <div class="flex items-center bg-white border-b border-gray-100 shrink-0 min-h-[44px]">
+      <!-- Breadcrumb (fixed left) -->
+      <button id="tree-back-btn" onclick="navigateTo('home')" class="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors pl-3 pr-2 py-3 shrink-0">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         Beranda
       </button>
-      <span class="text-gray-300">|</span>
-      <span id="tree-breadcrumb" class="text-xs text-gray-500 flex-1 truncate"></span>
-      <button onclick="resetTreeView()" class="shrink-0 text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Reset</button>
-      <button onclick="collapseAllNodes()" class="shrink-0 text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Ciutkan</button>
-      <button id="btn-refresh-data" onclick="refreshData()" class="shrink-0 text-xs px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors flex items-center gap-1">
-        <svg id="refresh-icon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        Perbarui Data
-      </button>
-      <button onclick="downloadGEDCOM()" class="shrink-0 text-xs px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors flex items-center gap-1">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-        </svg>
-        Export .ged
-      </button>
+      <span id="tree-back-sep" class="text-gray-200 shrink-0">|</span>
+      <span id="tree-breadcrumb" class="text-xs text-gray-500 flex-1 truncate px-2 min-w-0"></span>
+      <!-- Actions (scrollable on mobile) -->
+      <div class="flex items-center gap-1.5 px-2 py-2 overflow-x-auto shrink-0" style="scrollbar-width:none">
+        <button onclick="resetTreeView()" class="shrink-0 text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors min-h-[36px]">
+          <span class="hidden sm:inline">Reset</span>
+          <svg class="sm:hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        </button>
+        <button onclick="collapseAllNodes()" class="shrink-0 text-xs px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors min-h-[36px]">
+          <span class="hidden sm:inline">Ciutkan</span>
+          <svg class="sm:hidden w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+        </button>
+        <button id="btn-refresh-data" onclick="refreshData()" class="shrink-0 text-xs px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors flex items-center gap-1 min-h-[36px]">
+          <svg id="refresh-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span class="hidden sm:inline">Perbarui Data</span>
+        </button>
+        <button onclick="downloadGEDCOM()" class="shrink-0 text-xs px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors flex items-center gap-1 min-h-[36px]">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span class="hidden sm:inline">Export .ged</span>
+        </button>
+      </div>
     </div>
 
     <!-- Branch filter tabs -->
@@ -207,9 +240,13 @@
         <g id="links-group"></g>
         <g id="nodes-group"></g>
       </svg>
-      <!-- Hint -->
-      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-gray-400 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm pointer-events-none select-none">
+      <!-- Hint (desktop) -->
+      <div id="tree-hint" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-gray-400 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm pointer-events-none select-none">
         Scroll untuk zoom · Seret untuk geser · Klik node untuk detail
+      </div>
+      <!-- Hint (mobile) -->
+      <div id="tree-hint-mobile" class="hidden absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-gray-400 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full shadow-sm pointer-events-none select-none">
+        Cubit untuk zoom · Geser untuk navigasi
       </div>
     </div>
   </div>
@@ -217,7 +254,7 @@
   <!-- ─────────────────────────────────────────────── MEMBER VIEW ── -->
   <div id="view-member" class="hidden min-h-[calc(100vh-3.5rem)]">
     <div class="max-w-2xl mx-auto px-4 py-6">
-      <button id="member-back-btn" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6">
+      <button id="member-back-btn" class="flex items-center gap-2 min-h-[44px] px-1 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-4">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         Kembali
       </button>
@@ -227,13 +264,25 @@
 
   <!-- ─────────────────────────────────────────────── SEARCH VIEW ── -->
   <div id="view-search" class="hidden min-h-[calc(100vh-3.5rem)]">
-    <div class="max-w-2xl mx-auto px-4 py-6">
-      <div class="flex items-center justify-between mb-6">
-        <button id="search-back-btn" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+    <div class="max-w-2xl mx-auto px-4 py-4">
+      <!-- Mobile-only: large search input (navbar search is hard to reach) -->
+      <div class="md:hidden mb-4 relative">
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input id="mobile-search-input" type="search" placeholder="Cari nama, pasangan, atau kota…"
+          autocomplete="off"
+          class="w-full pl-11 pr-4 py-3.5 rounded-xl border border-gray-200 focus:outline-none focus:border-emerald-400 bg-white text-sm shadow-sm"
+          oninput="document.getElementById('search-input').value=this.value; onSearchInput({target:this})"
+          onkeydown="if(event.key==='Enter'){ AppState.lastSearchQuery=this.value; navigateTo('search'); }"
+        />
+      </div>
+      <div class="flex items-center justify-between mb-4">
+        <button id="search-back-btn" class="flex items-center gap-2 min-h-[44px] px-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           Kembali
         </button>
-        <button onclick="clearSearch()" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium transition-colors">Bersihkan</button>
+        <button onclick="clearSearch()" class="min-h-[44px] px-2 text-sm text-emerald-600 hover:text-emerald-800 font-medium transition-colors">Bersihkan</button>
       </div>
       <h2 id="search-heading" class="text-xl font-semibold text-gray-800 mb-4"></h2>
       <div id="search-results-list" class="view-enter"></div>
@@ -242,17 +291,47 @@
 
 </div><!-- #app -->
 
+<!-- ═══════════════════════════════════════════ MOBILE BOTTOM TABS ══ -->
+<nav id="mobile-tab-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-lg md:hidden">
+  <div class="flex">
+    <button id="mob-tab-home" onclick="navigateTo('home')"
+      class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[52px] text-gray-400 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      <span class="text-[10px] font-medium">Beranda</span>
+    </button>
+    <button id="mob-tab-tree" onclick="navigateTo('tree', { branch: null })"
+      class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[52px] text-gray-400 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h6m-6 5h9m-9 5h12M17 3v18M17 7l4-4M17 7l-4-4"/>
+      </svg>
+      <span class="text-[10px] font-medium">Pohon</span>
+    </button>
+    <button id="mob-tab-search" onclick="navigateTo('search')"
+      class="flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-[52px] text-gray-400 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <span class="text-[10px] font-medium">Cari</span>
+    </button>
+  </div>
+</nav>
+
 <!-- ══════════════════════════════════════════════════ MEMBER PANEL ══ -->
 <div id="member-panel" class="fixed top-14 right-0 z-30 bg-white shadow-2xl overflow-y-auto" style="width: 320px; height: calc(100vh - 3.5rem);">
-  <div class="p-5">
+  <!-- Mobile drag handle (swipe down to close) -->
+  <div class="sm:hidden flex justify-center pt-3 pb-1 sticky top-0 bg-white z-10" id="panel-drag-handle">
+    <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
+  </div>
+  <div class="p-5 pt-3">
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-semibold text-gray-800 text-sm">Detail Anggota</h3>
-      <button onclick="closeMemberPanel()" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      <!-- Enlarged touch target for close -->
+      <button onclick="closeMemberPanel()" class="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors -mr-1.5">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <!-- Mobile drag handle -->
-    <div class="sm:hidden w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4 -mt-2"></div>
     <div id="panel-content"></div>
   </div>
 </div>
@@ -459,6 +538,16 @@ function navigateTo(view, params = {}) {
     if (view === 'tree') el.classList.add('flex');
   }
 
+  // Sync mobile bottom tabs
+  ['home', 'tree', 'search'].forEach(v => {
+    const tab = document.getElementById(`mob-tab-${v}`);
+    if (!tab) return;
+    const active = v === view || (v === 'search' && view === 'member');
+    tab.classList.toggle('mob-tab-active', active);
+    tab.classList.toggle('text-gray-400', !active);
+    tab.classList.toggle('text-emerald-600', active);
+  });
+
   if (view === 'home') {
     renderHome();
   } else if (view === 'tree') {
@@ -471,6 +560,13 @@ function navigateTo(view, params = {}) {
     window.scrollTo(0, 0);
   } else if (view === 'search') {
     renderSearchView();
+    // Sync mobile search input with navbar query
+    const msi = document.getElementById('mobile-search-input');
+    if (msi) msi.value = document.getElementById('search-input').value;
+    setTimeout(() => {
+      const msi2 = document.getElementById('mobile-search-input');
+      if (msi2 && window.innerWidth < 768) msi2.focus();
+    }, 150);
     window.scrollTo(0, 0);
   }
 }
@@ -1004,6 +1100,22 @@ function closeMemberPanel() {
   const overlay = document.getElementById('panel-overlay');
   if (overlay) overlay.classList.add('hidden');
 }
+
+// Swipe-to-dismiss for mobile bottom sheet
+(function() {
+  let startY = 0, startScroll = 0;
+  const panel = document.getElementById('member-panel');
+  if (!panel) return;
+  panel.addEventListener('touchstart', e => {
+    startY      = e.touches[0].clientY;
+    startScroll = panel.scrollTop;
+  }, { passive: true });
+  panel.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - startY;
+    // Only dismiss if swiped down ≥ 80px AND was scrolled to top
+    if (dy > 80 && startScroll <= 0) closeMemberPanel();
+  }, { passive: true });
+})();
 
 // ── 10. MEMBER DETAIL VIEW ──────────────────────────────────────────────────
 // ── Marriage & children helpers ─────────────────────────────────────────────
