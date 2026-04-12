@@ -177,6 +177,13 @@
       <span id="tree-breadcrumb" class="text-xs text-gray-500 flex-1 truncate"></span>
       <button onclick="resetTreeView()" class="shrink-0 text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Reset</button>
       <button onclick="collapseAllNodes()" class="shrink-0 text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">Ciutkan</button>
+      <button id="btn-refresh-data" onclick="refreshData()" class="shrink-0 text-xs px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg transition-colors flex items-center gap-1">
+        <svg id="refresh-icon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Perbarui Data
+      </button>
     </div>
 
     <!-- Branch filter tabs -->
@@ -843,6 +850,45 @@ function fitTreeToView() {
 }
 
 function resetTreeView() { fitTreeToView(); }
+
+async function refreshData() {
+  const isApiMode = API_URL && API_URL !== 'YOUR_API_URL_HERE' && API_URL !== '';
+  if (!isApiMode) return; // no-op in embedded mode
+
+  const password = sessionStorage.getItem('ft_auth');
+  if (!password) { showAuthOverlay(); return; }
+
+  const btn  = document.getElementById('btn-refresh-data');
+  const icon = document.getElementById('refresh-icon');
+  btn.disabled = true;
+  icon.classList.add('animate-spin');
+
+  try {
+    const res = await fetch(API_URL, {
+      method:  'GET',
+      headers: { 'X-Family-Password': password },
+    });
+
+    if (res.status === 401) {
+      sessionStorage.removeItem('ft_auth');
+      sessionStorage.removeItem('ft_data');
+      showAuthOverlay();
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    try { sessionStorage.setItem('ft_data', JSON.stringify(data)); } catch(_) {}
+    initWithData(data);
+
+  } catch (err) {
+    alert('Gagal memperbarui data. Periksa koneksi internet Anda.');
+    console.error('[refreshData]', err);
+  } finally {
+    btn.disabled = false;
+    icon.classList.remove('animate-spin');
+  }
+}
 
 function centerOnNode(id) {
   const svgEl = document.getElementById('tree-svg');
