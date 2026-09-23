@@ -1,0 +1,51 @@
+/* Public copy of the measured hero frame. The site loads this file.
+   The tooling copy under .impeccable/ is not published by GitHub Pages. */
+:root {
+  --r-monogram-x: 1.410%; --r-monogram-y: 2.500%; --r-monogram-w: 8.590%; --r-monogram-h: 7.500%;
+  --r-monogram-cap: 26px; --r-monogram-font: 37px;
+  --r-name-x: 1.410%; --r-name-y: 2.500%; --r-name-w: 14.060%; --r-name-h: 7.500%;
+  --r-name-cap: 26px; --r-name-font: 37px;
+  --r-nav-experience-x: 61.410%; --r-nav-experience-y: 5.000%; --r-nav-experience-w: 8.440%; --r-nav-experience-h: 5.000%;
+  --r-nav-expertise-x: 72.340%; --r-nav-expertise-y: 5.000%; --r-nav-expertise-w: 7.500%; --r-nav-expertise-h: 5.000%;
+  --r-nav-project-x: 82.340%; --r-nav-project-y: 5.000%; --r-nav-project-w: 5.630%; --r-nav-project-h: 5.000%;
+  --r-nav-linkedin-x: 90.940%; --r-nav-linkedin-y: 5.000%; --r-nav-linkedin-w: 6.560%; --r-nav-linkedin-h: 4.170%;
+  --r-masthead-rule-x: 0.000%; --r-masthead-rule-y: 0.000%; --r-masthead-rule-w: 100.000%; --r-masthead-rule-h: 20.000%;
+  --r-hero-thesis-x: 1.410%; --r-hero-thesis-y: 23.330%; --r-hero-thesis-w: 68.590%; --r-hero-thesis-h: 8.330%;
+  --r-hero-thesis-cap: 37px; --r-hero-thesis-font: 54px; --r-hero-thesis-family: "Puritan"; --r-hero-thesis-weight: 700;
+  --r-hero-summary-x: 1.410%; --r-hero-summary-y: 43.330%; --r-hero-summary-w: 53.910%; --r-hero-summary-h: 10.830%;
+  --r-hero-summary-cap: 16px; --r-hero-summary-font: 23px;
+  --r-proof-years-x: 73.750%; --r-proof-years-y: 18.330%; --r-proof-years-w: 21.560%; --r-proof-years-h: 10.000%;
+  --r-proof-years-cap: 15px; --r-proof-years-font: 22px;
+  --r-proof-leadership-x: 73.750%; --r-proof-leadership-y: 20.000%; --r-proof-leadership-w: 21.560%; --r-proof-leadership-h: 8.330%;
+  --r-proof-leadership-cap: 14px; --r-proof-leadership-font: 21px;
+  --r-proof-scale-x: 73.750%; --r-proof-scale-y: 47.500%; --r-proof-scale-w: 23.440%; --r-proof-scale-h: 10.000%;
+  --r-proof-scale-cap: 15px; --r-proof-scale-font: 22px;
+  --r-evidence-rule-x: 0.000%; --r-evidence-rule-y: 50.000%; --r-evidence-rule-w: 100.000%; --r-evidence-rule-h: 20.000%;
+  --r-current-title-x: 1.410%; --r-current-title-y: 65.830%; --r-current-title-w: 33.280%; --r-current-title-h: 4.170%;
+  --r-current-title-cap: 17px; --r-current-title-font: 25px;
+  --r-current-company-x: 1.410%; --r-current-company-y: 71.670%; --r-current-company-w: 28.590%; --r-current-company-h: 8.330%;
+  --r-current-company-cap: 20px; --r-current-company-font: 29px;
+  --r-current-date-x: 1.410%; --r-current-date-y: 71.670%; --r-current-date-w: 8.590%; --r-current-date-h: 10.830%;
+  --r-current-date-cap: 17px; --r-current-date-font: 26px;
+  --r-current-summary-x: 1.410%; --r-current-summary-y: 84.170%; --r-current-summary-w: 47.340%; --r-current-summary-h: 10.000%;
+  --r-current-summary-cap: 14px; --r-current-summary-font: 21px;
+}
+
+.comp-frame { position: relative; width: 100%; aspect-ratio: 1280 / 720; overflow: hidden; }
+.r-monogram { position: absolute; left: var(--r-monogram-x); top: var(--r-monogram-y); width: var(--r-monogram-w); height: var(--r-monogram-h); }
+.r-name { position: absolute; left: var(--r-name-x); top: var(--r-name-y); width: var(--r-name-w); height: var(--r-name-h); }
+.r-nav-experience { position: absolute; left: var(--r-nav-experience-x); top: var(--r-nav-experience-y); width: var(--r-nav-experience-w); height: var(--r-nav-experience-h); }
+.r-nav-expertise { position: absolute; left: var(--r-nav-expertise-x); top: var(--r-nav-expertise-y); width: var(--r-nav-expertise-w); height: var(--r-nav-expertise-h); }
+.r-nav-project { position: absolute; left: var(--r-nav-project-x); top: var(--r-nav-project-y); width: var(--r-nav-project-w); height: var(--r-nav-project-h); }
+.r-nav-linkedin { position: absolute; left: var(--r-nav-linkedin-x); top: var(--r-nav-linkedin-y); width: var(--r-nav-linkedin-w); height: var(--r-nav-linkedin-h); }
+.r-masthead-rule { position: absolute; left: var(--r-masthead-rule-x); top: var(--r-masthead-rule-y); width: var(--r-masthead-rule-w); height: var(--r-masthead-rule-h); }
+.r-hero-thesis { position: absolute; left: var(--r-hero-thesis-x); top: var(--r-hero-thesis-y); width: var(--r-hero-thesis-w); height: var(--r-hero-thesis-h); }
+.r-hero-summary { position: absolute; left: var(--r-hero-summary-x); top: var(--r-hero-summary-y); width: var(--r-hero-summary-w); height: var(--r-hero-summary-h); }
+.r-proof-years { position: absolute; left: var(--r-proof-years-x); top: var(--r-proof-years-y); width: var(--r-proof-years-w); height: var(--r-proof-years-h); }
+.r-proof-leadership { position: absolute; left: var(--r-proof-leadership-x); top: var(--r-proof-leadership-y); width: var(--r-proof-leadership-w); height: var(--r-proof-leadership-h); }
+.r-proof-scale { position: absolute; left: var(--r-proof-scale-x); top: var(--r-proof-scale-y); width: var(--r-proof-scale-w); height: var(--r-proof-scale-h); }
+.r-evidence-rule { position: absolute; left: var(--r-evidence-rule-x); top: var(--r-evidence-rule-y); width: var(--r-evidence-rule-w); height: var(--r-evidence-rule-h); }
+.r-current-title { position: absolute; left: var(--r-current-title-x); top: var(--r-current-title-y); width: var(--r-current-title-w); height: var(--r-current-title-h); }
+.r-current-company { position: absolute; left: var(--r-current-company-x); top: var(--r-current-company-y); width: var(--r-current-company-w); height: var(--r-current-company-h); }
+.r-current-date { position: absolute; left: var(--r-current-date-x); top: var(--r-current-date-y); width: var(--r-current-date-w); height: var(--r-current-date-h); }
+.r-current-summary { position: absolute; left: var(--r-current-summary-x); top: var(--r-current-summary-y); width: var(--r-current-summary-w); height: var(--r-current-summary-h); }
